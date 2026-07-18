@@ -1,0 +1,38 @@
+# tts-gateway configuration.
+# Default location: ~/.config/tts-gateway/config.yaml
+# Every key is optional; the values shown here are the built-in defaults
+# unless noted otherwise. Environment variables override this file, e.g.
+#   TTS_GATEWAY__SERVER__PORT=6000
+#   TTS_GATEWAY__PROVIDERS__PIPER__MODELS_DIR=/opt/voices
+
+server:
+  host: 127.0.0.1        # bind address; keep on localhost unless you trust the network
+  port: 5111
+  cors_origins: ["*"]    # origins allowed for browser clients
+
+speech:
+  default_provider: auto # a provider name, or "auto" to pick the first available
+  provider_priority:     # order tried by "auto"
+    - piper
+    - tone
+  queue_size: 64         # utterances held before /v1/speak returns 429
+  history_size: 50       # finished utterances kept in /v1/status
+  max_text_length: 10000 # longer texts are rejected with 422
+
+playback:
+  backend: auto          # auto | command | null (null = synthesize but stay silent)
+  command: null          # override the playback argv, e.g.
+                         #   ["ffplay", "-autoexit", "-nodisp", "-loglevel", "quiet", "{file}"]
+                         # "{file}" is replaced with a temp audio file; without
+                         # it, audio bytes are piped to the command's stdin.
+
+logging:
+  level: INFO
+
+providers:
+  piper:
+    binary: piper        # path to the piper executable
+    models_dir: null     # where *.onnx voices live; default: ~/.local/share/tts-gateway/piper
+    default_voice: null  # model name (without .onnx) or full path; default: first model found
+    extra_args: []       # appended verbatim to the piper command line
+  tone: {}               # dependency-free beep provider; no settings
