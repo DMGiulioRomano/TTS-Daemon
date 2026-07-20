@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-20
+
+First PyPI release (distribution `tts-daemon`).
+
 ### Added
 
 - README rebuilt as a conversion funnel: centered logo (new `assets/`
@@ -79,5 +83,6 @@ First release.
 - **Tests**: 188 unit + integration tests (queue concurrency, fake-piper
   subprocess suite, full REST/WebSocket contract).
 
-[Unreleased]: https://github.com/DMGiulioRomano/TTS-Gateway/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/DMGiulioRomano/TTS-Gateway/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/DMGiulioRomano/TTS-Gateway/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/DMGiulioRomano/TTS-Gateway/releases/tag/v0.1.0
