@@ -6,6 +6,39 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- README rebuilt as a conversion funnel: centered logo (new `assets/`
+  wordmark, light + dark variants), badge row, install-first layout
+  (pip/pipx, one-line script, Docker), a "60-second tour" with real
+  outputs, a comparison table vs. raw piper / speech-dispatcher / cloud
+  APIs, and a star-history chart.
+- `Dockerfile` (API + synthesis in a container) and
+  `scripts/install.sh` one-line installer.
+- Demo assets: `assets/demo.gif` shown in the README, with a committed
+  VHS script (`assets/demo.tape`) so it can be regenerated after UI
+  changes; audio samples page for GitHub Pages (`docs/samples/`) with a
+  reproducible generation script (`scripts/make_samples.sh`).
+- Release automation: pushing a `v*` tag now builds the package, publishes
+  it to PyPI via trusted publishing (OIDC), and creates a GitHub Release
+  with notes extracted from this changelog (`.github/workflows/release.yml`,
+  `scripts/release_notes.py`); a manual run publishes to TestPyPI as a dry
+  run. `scripts/check_version.py` enforces that `pyproject.toml` and
+  `tts_gateway.__version__` agree (and match the tag).
+- Browser userscript: **auto-read** of new chat replies (`Alt+A` toggles it
+  per site, remembered across reloads). A `MutationObserver` reads each new
+  assistant message once it stops streaming, skipping code blocks; existing
+  history is baselined silent. The assistant-message CSS selector has
+  built-in defaults for ChatGPT/Claude/Gemini and is configurable per site
+  from the userscript menu for any other chat.
+
+### Changed
+
+- The PyPI distribution is named `tts-daemon` (`pip install tts-daemon`) —
+  the `tts-gateway` name on PyPI is taken by an unrelated project. The
+  import package (`tts_gateway`) and the `tts-gateway` command are
+  unchanged.
+
 ## [0.1.0] - 2026-07-18
 
 First release.

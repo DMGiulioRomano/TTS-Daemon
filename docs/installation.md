@@ -12,7 +12,19 @@
 
 ## Install the gateway
 
-From a checkout:
+Recommended — an isolated install with [pipx](https://pipx.pypa.io):
+
+```sh
+pipx install tts-daemon
+```
+
+Or with plain pip (ideally inside a virtualenv):
+
+```sh
+pip install tts-daemon
+```
+
+From a checkout (for development, see [development.md](development.md)):
 
 ```sh
 git clone https://github.com/DMGiulioRomano/TTS-Gateway.git
@@ -20,8 +32,9 @@ cd TTS-Gateway
 pip install .
 ```
 
-For an isolated install, use [pipx](https://pipx.pypa.io) (`pipx install .`)
-or a virtualenv. Verify:
+The PyPI distribution is named `tts-daemon` (the `tts-gateway` name was
+already taken by an unrelated project); the command it installs is still
+`tts-gateway`. Verify:
 
 ```sh
 tts-gateway serve
@@ -161,6 +174,6 @@ do it only on a network where that is acceptable, and restrict
 ## Uninstall
 
 ```sh
-pip uninstall tts-gateway
+pip uninstall tts-daemon     # or: pipx uninstall tts-daemon
 rm -rf ~/.config/tts-gateway ~/.local/share/tts-gateway
 ```

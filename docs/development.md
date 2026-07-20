@@ -94,9 +94,26 @@ architecture rationale is in [architecture.md](architecture.md).
 
 ## Release checklist
 
+Publishing is automated by [`release.yml`](../.github/workflows/release.yml):
+pushing a `v*` tag builds the sdist + wheel, publishes to PyPI via trusted
+publishing (OIDC — no token secrets), and creates a GitHub Release with the
+notes taken from `CHANGELOG.md`.
+
 1. Update `__version__` in `src/tts_gateway/__init__.py` and the
-   `[project]` version in `pyproject.toml` (keep them equal).
-2. Move `CHANGELOG.md` *Unreleased* entries under the new version + date.
+   `[project]` version in `pyproject.toml` (keep them equal —
+   `python3 scripts/check_version.py` verifies, and the release workflow
+   fails if they diverge or don't match the tag).
+2. Move `CHANGELOG.md` *Unreleased* entries under the new version + date
+   (the workflow extracts that section as the release notes and fails if
+   it is missing).
 3. `make check` on a clean tree.
-4. Tag: `git tag -a v0.x.0 -m "v0.x.0" && git push --tags`.
-5. Build & publish: `python3 -m build && twine upload dist/*`.
+4. Optional dry run: trigger the *Release* workflow manually
+   (`workflow_dispatch`) — it publishes to **TestPyPI** instead.
+5. Tag: `git tag -a v0.x.0 -m "v0.x.0" && git push --tags`. The workflow
+   does the rest; watch it in the Actions tab.
+
+One-time setup (already done for this repo): configure the trusted
+publisher for the `tts-daemon` project on pypi.org and test.pypi.org
+(repository `DMGiulioRomano/TTS-Gateway`, workflow `release.yml`,
+environments `pypi` / `testpypi`), and create those two environments in
+the repo settings.

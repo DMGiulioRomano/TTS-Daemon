@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tts-gateway — audio samples</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --accent: #6366f1;
+    --fg: #1f2937; --bg: #ffffff; --muted: #6b7280; --line: #e5e7eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --accent: #818cf8; --fg: #e5e7eb; --bg: #0d1117; --muted: #9ca3af; --line: #30363d; }
+  }
+  body {
+    margin: 0 auto; max-width: 860px; padding: 2rem 1rem 4rem;
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--fg); background: var(--bg);
+  }
+  h1 { font-size: 1.6rem; }
+  h1 span { color: var(--accent); }
+  p.lead { color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; margin-top: 1.5rem; }
+  th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--line); }
+  th { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  td code { font-size: .9em; }
+  audio { width: 240px; max-width: 60vw; vertical-align: middle; }
+  footer { margin-top: 3rem; font-size: .9rem; color: var(--muted); }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<h1>tts<span>-</span>gateway — audio samples</h1>
+<p class="lead">
+  Every clip below was generated with
+  <code>tts-gateway synthesize</code> by the committed
+  <a href="https://github.com/DMGiulioRomano/TTS-Gateway/blob/main/scripts/make_samples.sh">scripts/make_samples.sh</a>
+  — no cherry-picking, fully reproducible.
+</p>
+
+<table>
+  <thead>
+    <tr><th>Provider</th><th>Voice</th><th>Language</th><th>Sample</th></tr>
+  </thead>
+  <tbody>
+    <!-- Piper rows are commented out until their clips are generated:
+         install Piper + the two voices (docs/installation.md), run
+         scripts/make_samples.sh, then uncomment. Keeping them hidden
+         avoids shipping players that point at missing files. -->
+    <!--
+    <tr>
+      <td><code>piper</code></td>
+      <td><code>en_US-lessac-medium</code></td>
+      <td>English (US)</td>
+      <td><audio controls preload="none" src="audio/piper-en_US-lessac-medium-1.wav"></audio></td>
+    </tr>
+    <tr>
+      <td><code>piper</code></td>
+      <td><code>en_US-lessac-medium</code></td>
+      <td>English (US)</td>
+      <td><audio controls preload="none" src="audio/piper-en_US-lessac-medium-2.wav"></audio></td>
+    </tr>
+    <tr>
+      <td><code>piper</code></td>
+      <td><code>it_IT-paola-medium</code></td>
+      <td>Italian</td>
+      <td><audio controls preload="none" src="audio/piper-it_IT-paola-medium-1.wav"></audio></td>
+    </tr>
+    <tr>
+      <td><code>piper</code></td>
+      <td><code>it_IT-paola-medium</code></td>
+      <td>Italian</td>
+      <td><audio controls preload="none" src="audio/piper-it_IT-paola-medium-2.wav"></audio></td>
+    </tr>
+    -->
+    <tr>
+      <td><code>tone</code></td>
+      <td>—</td>
+      <td>beeps (engine-free fallback)</td>
+      <td><audio controls preload="none" src="audio/tone-beep.wav"></audio></td>
+    </tr>
+  </tbody>
+</table>
+
+<footer>
+  <a href="https://github.com/DMGiulioRomano/TTS-Gateway">← back to the repository</a>
+  · Any voice from the
+  <a href="https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md">Piper catalogue</a>
+  works the same way.
+</footer>
+
+</body>
+</html>

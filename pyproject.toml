@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tts-gateway"
+name = "tts-daemon"
 version = "0.1.0"
 description = "Local HTTP/WebSocket Text-to-Speech gateway with pluggable providers (Piper first)."
 readme = "README.md"
