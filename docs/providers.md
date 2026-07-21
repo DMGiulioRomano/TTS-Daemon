@@ -69,6 +69,22 @@ class MyEngineProvider(TTSProvider):
    engine emits MP3/OGG/FLAC, declare it — the player layer routes formats
    to a capable output command automatically.
 
+## Bundled providers
+
+- **piper** — local neural TTS via the `piper` executable (the default choice
+  for private, offline speech).
+- **tone** — dependency-free beeps, so the gateway works with nothing installed.
+- **edge** *(optional extra, `pip install 'tts-daemon[edge]'`)* — free Microsoft
+  neural voices through the `edge-tts` package.
+
+> **Cloud providers, be honest in your docs.** `edge` is *cloud-backed*: text is
+> sent to Microsoft over an *unofficial* endpoint that needs network access and
+> can change without notice. It is lazily imported and shipped as an opt-in
+> extra so the gateway never requires it, and it is deliberately **not** in the
+> default `provider_priority`. If you contribute another cloud engine, follow
+> the same rules — optional extra, lazy import, and a privacy note here and in
+> `configuration.md`.
+
 ## Wiring it up
 
 ### Option A — separate package (no gateway changes)

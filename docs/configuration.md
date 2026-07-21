@@ -131,6 +131,32 @@ Bypass the cache for a single request with the `no_cache` option, e.g.
 | --------------- | ------- | ------------------------------------ |
 | `default_voice` | `mid`   | `low`, `mid`, or `high` beep pitch.  |
 
+### `providers.edge` (optional extra)
+
+Free Microsoft neural voices via the [`edge-tts`](https://pypi.org/project/edge-tts/)
+package — hundreds of voices, no API key, no local model. Install the extra to
+enable it:
+
+```sh
+pip install 'tts-daemon[edge]'
+```
+
+| Key              | Default             | Meaning                                                    |
+| ---------------- | ------------------- | ---------------------------------------------------------- |
+| `default_voice`  | `en-US-AriaNeural`  | Voice used when a request names none. List them with `tts-daemon voices --provider edge`. |
+| `default_pitch`  | *unset*             | edge `pitch` applied when a request omits it, e.g. `"+10Hz"`. |
+| `default_volume` | *unset*             | edge `volume` applied when a request omits it, e.g. `"-20%"`. |
+
+Per-request `options` accepts `pitch` and `volume` (same string format);
+`speed` maps to the edge rate (`1.5` → `+50%`). Output is MP3, which the player
+routes to a capable command (`ffplay`/`mpv`/`afplay`).
+
+> **Privacy / reliability note.** edge-tts is a **cloud** provider: the text you
+> synthesize is sent to Microsoft's servers, over an **unofficial** endpoint
+> that can change or break at any time, and it needs network access. Prefer
+> Piper for anything private or offline. This is why `edge` is an opt-in extra
+> and is not in the default `provider_priority`.
+
 ### Third-party providers
 
 Each provider reads its own `providers.<name>` section; the gateway passes

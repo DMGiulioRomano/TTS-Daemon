@@ -47,3 +47,7 @@ providers:
     default_voice: null  # model name (without .onnx) or full path; default: first model found
     extra_args: []       # appended verbatim to the piper command line
   tone: {}               # dependency-free beep provider; no settings
+  edge:                  # optional: pip install 'tts-daemon[edge]' (cloud, unofficial API)
+    default_voice: en-US-AriaNeural
+    # default_pitch: "+0Hz"   # optional edge pitch/volume used when a request omits them
+    # default_volume: "+0%"

@@ -8,6 +8,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **edge-tts provider** (optional extra `pip install 'tts-daemon[edge]'`): free
+  Microsoft neural voices — hundreds of languages, no API key, GPU, or model
+  download — registered as the `edge` provider via the entry-point group and
+  **lazy-imported**, so the gateway never requires the package. `speed` maps to
+  the edge rate (`1.5` → `+50%`); `options.pitch` / `options.volume` pass
+  through (unknown options rejected); `voices()` come from the package (cached).
+  Output is MP3 (`AudioFormat.MP3`), routed to an MP3-capable player
+  (ffplay/mpv/afplay). `availability()` explains how to install the package;
+  synthesis failures carry an actionable, cloud-aware message. Documented as a
+  cloud, unofficial-endpoint provider (privacy note in `docs/providers.md` and
+  `docs/configuration.md`); not added to the default `provider_priority`.
 - **Built-in Piper voice downloader** (`tts-daemon download <voice>`): fetches a
   voice's `.onnx` model and `.onnx.json` config into the configured `models_dir`
   (created if missing) straight from the `rhasspy/piper-voices` catalog, so
