@@ -61,17 +61,18 @@ location).
 
 ### 2. A voice
 
-Voices are `.onnx` model files with a `.onnx.json` sidecar. The gateway
-looks in `~/.local/share/tts-daemon/piper` by default:
+Voices are `.onnx` model files with a `.onnx.json` sidecar. The gateway can
+download and place them for you (into `~/.local/share/tts-daemon/piper` by
+default, or your configured `providers.piper.models_dir`):
 
 ```sh
-mkdir -p ~/.local/share/tts-daemon/piper
-python3 -m piper.download_voices en_US-lessac-medium \
-  --data-dir ~/.local/share/tts-daemon/piper
+tts-daemon download --list --language en   # browse the catalog
+tts-daemon download en_US-lessac-medium    # fetch a voice (skips if present; --force to refetch)
 ```
 
 Any voice from the [Piper voice catalogue](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/VOICES.md)
 works; download as many as you like and select per request with `voice`.
+(The manual equivalent is `python3 -m piper.download_voices <id> --data-dir <models_dir>`.)
 If you already keep voices elsewhere, point the gateway at them:
 
 ```yaml

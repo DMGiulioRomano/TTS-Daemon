@@ -97,12 +97,11 @@ queued           : 0/64
 ```sh
 pip install piper-tts
 
-mkdir -p ~/.local/share/tts-daemon/piper
-python3 -m piper.download_voices en_US-lessac-medium \
-  --data-dir ~/.local/share/tts-daemon/piper
-
+tts-daemon download en_US-lessac-medium   # fetches the model into the right place
 tts-daemon speak "Now with an actual voice"
 ```
+
+Browse the catalog with `tts-daemon download --list --language en`.
 
 The gateway's default provider is `auto`: it picks Piper as soon as the
 binary and a voice model are found, and falls back to `tone` otherwise.

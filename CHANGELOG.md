@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Built-in Piper voice downloader** (#11): `tts-daemon download <voice>`
+  fetches a voice's `.onnx` + `.onnx.json` into the models directory (atomic,
+  idempotent, `--force` to refetch, progress bar with size verification), and
+  `tts-daemon download --list [--language xx]` browses the Hugging Face
+  `rhasspy/piper-voices` catalog. Unknown ids suggest close matches; offline
+  and incomplete-download failures are actionable. Pure stdlib (`voices.py`).
 - **edge-tts provider** (#15): free Microsoft neural voices with no API key,
   GPU, or model downloads — the shortest path to a real voice. Optional extra
   `pip install 'tts-daemon[edge]'`, lazily imported so the gateway never

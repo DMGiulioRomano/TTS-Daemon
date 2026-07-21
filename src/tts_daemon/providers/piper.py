@@ -172,7 +172,8 @@ class PiperProvider(TTSProvider):
         if self._explicit_default_voice_path() is None and not self._model_files():
             return Availability.unavailable(
                 f"no voice models (*.onnx) found in {self._models_dir} "
-                "(download one, or set providers.piper.models_dir / default_voice)"
+                "(run `tts-daemon download <voice>`, or set "
+                "providers.piper.models_dir / default_voice)"
             )
         return Availability.ok()
 

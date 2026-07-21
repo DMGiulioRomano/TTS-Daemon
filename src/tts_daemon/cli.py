@@ -16,6 +16,7 @@ from pathlib import Path
 from tts_daemon.client import GatewayClient, GatewayClientError
 from tts_daemon.core.errors import ConfigError
 from tts_daemon.defaults import DEFAULT_BASE_URL
+from tts_daemon.voices import VoiceError
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,7 +24,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return args.handler(args)
-    except (GatewayClientError, ConfigError) as exc:
+    except (GatewayClientError, ConfigError, VoiceError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     except KeyboardInterrupt:
@@ -88,6 +89,24 @@ def build_parser() -> argparse.ArgumentParser:
     providers.add_argument("--json", action="store_true", help="print raw JSON")
     _add_url(providers)
     providers.set_defaults(handler=cmd_providers)
+
+    download = subparsers.add_parser(
+        "download", help="download a Piper voice model (or --list the catalog)"
+    )
+    download.add_argument("voice", nargs="?", help="voice id to download, e.g. en_US-lessac-medium")
+    download.add_argument(
+        "--list", action="store_true", help="list available voices instead of downloading"
+    )
+    download.add_argument(
+        "--language", help="with --list, restrict to a language code prefix (e.g. it)"
+    )
+    download.add_argument(
+        "--models-dir", metavar="DIR", help="destination directory (default: piper models dir)"
+    )
+    download.add_argument(
+        "--force", action="store_true", help="re-download even if the files already exist"
+    )
+    download.set_defaults(handler=cmd_download)
 
     init_config = subparsers.add_parser(
         "init-config", help="write an annotated config file with the defaults"
@@ -235,6 +254,78 @@ def cmd_providers(args: argparse.Namespace) -> int:
         state = "available" if provider["available"] else f"unavailable ({provider['reason']})"
         print(f"{marker} {provider['name']:<10} {state}")
     return 0
+
+
+def cmd_download(args: argparse.Namespace) -> int:
+    from tts_daemon.voices import download_voice, fetch_catalog, filter_voices
+
+    catalog = fetch_catalog()
+    if args.list:
+        voices = filter_voices(catalog, args.language)
+        if not voices:
+            where = f" for language {args.language!r}" if args.language else ""
+            print(f"no voices found{where}")
+            return 0
+        width = max(len(voice.id) for voice in voices)
+        for voice in voices:
+            size = f"{voice.size_bytes / 1e6:.0f} MB" if voice.size_bytes else "?"
+            speakers = f"{voice.num_speakers} speakers" if voice.num_speakers > 1 else ""
+            language = voice.language or ""
+            quality = voice.quality or ""
+            print(f"{voice.id:<{width}}  {language:<7} {quality:<8} {size:>7}  {speakers}".rstrip())
+        return 0
+
+    if not args.voice:
+        print("error: give a voice id to download, or use --list", file=sys.stderr)
+        return 2
+
+    models_dir = _download_models_dir(args)
+    written = download_voice(
+        args.voice,
+        models_dir,
+        catalog=catalog,
+        force=args.force,
+        progress=_make_download_progress(),
+    )
+    sys.stderr.write("\n")
+    for path in written:
+        print(path)
+    print(f"{args.voice} is ready in {models_dir}")
+    return 0
+
+
+def _download_models_dir(args: argparse.Namespace) -> Path:
+    from tts_daemon.providers.piper import default_models_dir
+
+    if args.models_dir:
+        return Path(args.models_dir).expanduser()
+    try:
+        from tts_daemon.config import load_config
+
+        configured = load_config().provider_settings("piper").get("models_dir")
+    except ConfigError:
+        configured = None
+    return Path(configured).expanduser() if configured else default_models_dir()
+
+
+def _make_download_progress():
+    """A progress printer that renders one bar per file on stderr."""
+    state = {"name": None}
+
+    def progress(name: str, downloaded: int, total: int | None) -> None:
+        if state["name"] is not None and name != state["name"]:
+            sys.stderr.write("\n")
+        state["name"] = name
+        if total:
+            pct = min(100, downloaded * 100 // total)
+            filled = pct * 24 // 100
+            bar = "#" * filled + "-" * (24 - filled)
+            sys.stderr.write(f"\r{name} [{bar}] {pct:3d}%")
+        else:
+            sys.stderr.write(f"\r{name} {downloaded / 1e6:.1f} MB")
+        sys.stderr.flush()
+
+    return progress
 
 
 def cmd_init_config(args: argparse.Namespace) -> int:
