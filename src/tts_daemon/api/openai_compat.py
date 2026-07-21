@@ -9,8 +9,9 @@ speech endpoint gets free, private, local voices by pointing at this gateway::
     client.audio.speech.create(model="tts-1", input="Hello", voice="alloy")
 
 The route is a thin translation layer over ``SpeechService.synthesize`` — no
-core changes. The ``Authorization`` header is accepted and ignored (until
-bearer auth lands, issue #18).
+core changes. It lives under ``/v1``, so when ``server.auth_token`` is set the
+OpenAI client's ``api_key`` must equal that token (it is sent as
+``Authorization: Bearer``); when auth is disabled the key is ignored.
 """
 
 from __future__ import annotations

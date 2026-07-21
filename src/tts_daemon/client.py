@@ -28,9 +28,18 @@ class GatewayClientError(Exception):
 class GatewayClient:
     """Minimal synchronous client for the gateway's REST API."""
 
-    def __init__(self, base_url: str = DEFAULT_BASE_URL, timeout: float = 300.0) -> None:
+    def __init__(
+        self,
+        base_url: str = DEFAULT_BASE_URL,
+        timeout: float = 300.0,
+        *,
+        token: str | None = None,
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        # Sent as "Authorization: Bearer <token>" when the gateway requires it
+        # (server.auth_token). Left off entirely when unset.
+        self.token = token or None
 
     # ------------------------------------------------------------- commands
 
@@ -109,6 +118,8 @@ class GatewayClient:
         url = self.base_url + path
         data = None
         headers = {"Accept": "application/json"}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
         if body is not None:
             data = json.dumps(body).encode("utf-8")
             headers["Content-Type"] = "application/json"

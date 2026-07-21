@@ -37,6 +37,7 @@ from typing import Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
+from tts_daemon.api.auth import websocket_authorized
 from tts_daemon.api.event_bridge import subscribe_event_queue
 from tts_daemon.api.schemas import SpeakRequest
 from tts_daemon.core.errors import GatewayError
@@ -51,6 +52,12 @@ router = APIRouter()
 @router.websocket("/v1/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     service: SpeechService = websocket.app.state.service
+    # Browsers cannot set headers on a WebSocket, so the token may arrive as a
+    # ?token= query param. Reject before accepting the handshake (code 1008,
+    # "policy violation") when authentication is enabled and the token is wrong.
+    if not websocket_authorized(websocket, websocket.app.state.config.server.auth_token):
+        await websocket.close(code=1008)
+        return
     await websocket.accept()
 
     loop = asyncio.get_running_loop()

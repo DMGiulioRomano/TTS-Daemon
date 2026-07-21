@@ -11,6 +11,7 @@ Code sends the hook payload as JSON on stdin.
 Environment overrides:
 
 - ``TTS_DAEMON_URL``            gateway base URL (default http://127.0.0.1:5111)
+- ``TTS_DAEMON_TOKEN``          bearer token when the gateway sets server.auth_token
 - ``TTS_DAEMON_SPEAK_MAX_CHARS`` truncation limit for replies (default 400)
 - ``TTS_DAEMON_SPEAK_PROVIDER`` / ``TTS_DAEMON_SPEAK_VOICE`` /
   ``TTS_DAEMON_SPEAK_SPEED``    forwarded to the gateway when set
@@ -128,10 +129,14 @@ def speak(text: str) -> None:
         except ValueError:
             pass
     url = os.environ.get("TTS_DAEMON_URL", DEFAULT_URL).rstrip("/") + "/v1/speak"
+    headers = {"Content-Type": "application/json"}
+    token = os.environ.get("TTS_DAEMON_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(
         url,
         data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:

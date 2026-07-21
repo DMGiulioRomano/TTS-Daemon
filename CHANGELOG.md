@@ -8,6 +8,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Optional bearer-token authentication** (`server.auth_token`, env
+  `TTS_DAEMON__SERVER__AUTH_TOKEN`): off by default (unauthenticated on
+  loopback). When set, every `/v1` route requires `Authorization: Bearer
+  <token>`; `/v1/ws` and `/v1/events` also accept a `?token=` query param
+  (browsers can't set headers on `WebSocket`/`EventSource`). `GET /health` and
+  the playground at `/` stay open. Tokens are compared in constant time
+  (`secrets.compare_digest`); a wrong/missing token returns `401` with the
+  standard `{"detail": …}` body. Wired as a FastAPI dependency on the `/v1`
+  router, so the scheme is documented in the OpenAPI schema. The gateway logs a
+  warning at startup when `server.host` is not loopback and no token is set. The
+  Python client and CLI gain a `token` argument / `--token` flag
+  (`TTS_DAEMON_TOKEN` env); the playground prompts for a token and stores it in
+  `localStorage`; the browser userscript (a `TOKEN` constant) and the Claude
+  Code hook (`TTS_DAEMON_TOKEN` env) can send it too.
 - **Web playground at `/`**: the root page is now an interactive playground
   instead of a static info page. Type text, pick a provider and voice
   (populated live from `/v1/providers` and `/v1/voices`, unavailable providers

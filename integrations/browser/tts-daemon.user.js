@@ -22,6 +22,7 @@
   "use strict";
 
   const GATEWAY = "http://127.0.0.1:5111"; // change if your gateway uses another port
+  const TOKEN = ""; // set to your server.auth_token when the gateway requires one
 
   // How long an assistant message must stop changing before we read it.
   // Chat UIs stream text token by token; this debounce waits for the reply
@@ -45,10 +46,12 @@
   const keySelector = "autoread:selector:" + origin;
 
   function post(path, body, onOk) {
+    const headers = { "Content-Type": "application/json" };
+    if (TOKEN) headers["Authorization"] = "Bearer " + TOKEN;
     GM_xmlhttpRequest({
       method: "POST",
       url: GATEWAY + path,
-      headers: { "Content-Type": "application/json" },
+      headers: headers,
       data: JSON.stringify(body || {}),
       timeout: 5000,
       onload: (response) => {

@@ -36,13 +36,18 @@ class _StrictModel(BaseModel):
 
 
 class ServerConfig(_StrictModel):
-    """HTTP server binding and CORS."""
+    """HTTP server binding, CORS, and optional authentication."""
 
     host: str = DEFAULT_HOST
     port: int = Field(default=DEFAULT_PORT, ge=1, le=65535)
     # The gateway is a local service; permissive CORS lets browser userscripts
     # on any page reach it. Restrict this list if you bind beyond localhost.
     cors_origins: list[str] = Field(default_factory=lambda: ["*"])
+    # Optional bearer token. Null (the default) leaves the gateway open, which
+    # is fine on loopback. Set it — or the TTS_DAEMON__SERVER__AUTH_TOKEN env
+    # var — to require "Authorization: Bearer <token>" on every /v1 route
+    # before binding beyond localhost. /health and / stay open.
+    auth_token: str | None = None
 
 
 class SpeechConfig(_StrictModel):
@@ -238,6 +243,8 @@ server:
   host: 127.0.0.1        # bind address; keep on localhost unless you trust the network
   port: 5111
   cors_origins: ["*"]    # origins allowed for browser clients
+  auth_token: null       # require "Authorization: Bearer <token>" on /v1 when set
+                         # (env: TTS_DAEMON__SERVER__AUTH_TOKEN); null = no auth
 
 speech:
   default_provider: auto # a provider name, or "auto" to pick the first available

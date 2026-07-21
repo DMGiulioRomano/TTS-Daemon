@@ -165,11 +165,21 @@ launchctl load ~/Library/LaunchAgents/dev.tts-daemon.plist
 
 ## Security note
 
-The gateway has no authentication; anyone who can reach the port can make
-your speakers talk (and submit text to your TTS engine). The default bind of
-`127.0.0.1` keeps it private to your machine. If you change `server.host`,
-do it only on a network where that is acceptable, and restrict
-`server.cors_origins` accordingly.
+By default the gateway has no authentication; anyone who can reach the port
+can make your speakers talk (and submit text to your TTS engine). The default
+bind of `127.0.0.1` keeps it private to your machine.
+
+Before you change `server.host` to bind beyond localhost, set a bearer token
+so `/v1` requires `Authorization: Bearer <token>`:
+
+```sh
+TTS_DAEMON__SERVER__AUTH_TOKEN="$(openssl rand -hex 32)" \
+  TTS_DAEMON__SERVER__HOST=0.0.0.0 tts-daemon serve
+```
+
+See [configuration.md](configuration.md#authentication) for the details
+(query-param token for browsers, CLI/client `--token`, the startup warning).
+Restrict `server.cors_origins` too when you expose the gateway.
 
 ## Uninstall
 

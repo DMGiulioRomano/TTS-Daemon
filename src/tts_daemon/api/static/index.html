@@ -39,13 +39,13 @@
     border-radius: 10px; padding: 1rem;
   }
   label { display: block; font-size: .8rem; color: var(--muted); margin: .6rem 0 .2rem; }
-  textarea, select, input[type=range] { width: 100%; }
+  textarea, select, input[type=range], input[type=password], input[type=text] { width: 100%; }
   textarea {
     min-height: 6rem; resize: vertical; padding: .6rem; border-radius: 8px;
     border: 1px solid var(--border); background: var(--bg); color: var(--fg);
     font: inherit;
   }
-  select {
+  select, input[type=password], input[type=text] {
     padding: .45rem; border-radius: 8px; border: 1px solid var(--border);
     background: var(--bg); color: var(--fg); font: inherit;
   }
@@ -118,6 +118,9 @@
       <button id="stop">Stop</button>
       <label class="check"><input type="checkbox" id="interrupt"> interrupt</label>
     </div>
+    <label for="token">API token <span class="muted">— only if the server sets <code>auth_token</code></span></label>
+    <input type="password" id="token" placeholder="Authorization: Bearer …" autocomplete="off" spellcheck="false">
+
     <div id="status-msg" class="muted"></div>
     <audio id="audio" hidden></audio>
   </section>
@@ -144,11 +147,25 @@
     text: $("text"), provider: $("provider"), voice: $("voice"),
     speed: $("speed"), speedval: $("speedval"), speak: $("speak"),
     play: $("play"), stop: $("stop"), interrupt: $("interrupt"),
+    token: $("token"),
     status: $("status-msg"), audio: $("audio"), version: $("version"),
     conn: $("conn"), now: $("now"), nowText: $("now-text"),
     queue: $("queue"), queueCount: $("queue-count"), events: $("events"),
   };
   let voicesByProvider = {};
+  const TOKEN_KEY = "tts-daemon-token";
+
+  function token() { return (els.token.value || "").trim(); }
+
+  // Merge the bearer header into request headers when a token is set. The
+  // server only requires it when server.auth_token is configured; otherwise
+  // the header is ignored, so sending it is always safe.
+  function authHeaders(extra) {
+    const headers = Object.assign({}, extra || {});
+    const t = token();
+    if (t) headers["Authorization"] = "Bearer " + t;
+    return headers;
+  }
 
   function setStatus(msg, isErr) {
     els.status.textContent = msg || "";
@@ -156,6 +173,8 @@
   }
 
   async function jsonFetch(url, opts) {
+    opts = opts || {};
+    opts.headers = authHeaders(opts.headers);
     const res = await fetch(url, opts);
     if (!res.ok) {
       let detail = res.status + " " + res.statusText;
@@ -239,7 +258,7 @@
     setStatus("Synthesizing…");
     try {
       const res = await fetch("/v1/synthesize", {
-        method: "POST", headers: { "content-type": "application/json" },
+        method: "POST", headers: authHeaders({ "content-type": "application/json" }),
         body: JSON.stringify(body()),
       });
       if (!res.ok) {
@@ -295,9 +314,17 @@
     while (els.events.childNodes.length > 30) els.events.removeChild(els.events.lastChild);
   }
 
+  let socket = null;
+
   function connect() {
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(proto + "//" + location.host + "/v1/ws");
+    // Browsers can't set headers on a WebSocket, so pass the token (if any) as
+    // a query param — the server accepts either.
+    let url = proto + "//" + location.host + "/v1/ws";
+    const t = token();
+    if (t) url += "?token=" + encodeURIComponent(t);
+    const ws = new WebSocket(url);
+    socket = ws;
     ws.addEventListener("open", () => {
       els.conn.textContent = "● live"; els.conn.className = "conn up";
       ws.send(JSON.stringify({ type: "status" }));
@@ -316,6 +343,15 @@
       }
     });
   }
+
+  // Persist the token and re-authenticate live when it changes: reload the
+  // provider/voice lists and reconnect the event socket with the new token.
+  try { els.token.value = localStorage.getItem(TOKEN_KEY) || ""; } catch (e) {}
+  els.token.addEventListener("change", () => {
+    try { localStorage.setItem(TOKEN_KEY, token()); } catch (e) {}
+    loadProviders();
+    if (socket) socket.close();  // triggers reconnect with the new token
+  });
 
   loadVersion();
   loadProviders();

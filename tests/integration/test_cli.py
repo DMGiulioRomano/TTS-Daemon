@@ -23,7 +23,7 @@ class TestParser:
             ["serve", "--host", "0.0.0.0", "--port", "6000"],
             ["speak", "hello", "world", "--interrupt", "--wait", "--speed", "1.5"],
             ["synthesize", "hi", "-o", "out.wav", "--provider", "tone"],
-            ["stop"],
+            ["stop", "--token", "abc"],
             ["status", "--json"],
             ["voices", "--provider", "piper"],
             ["providers"],
@@ -31,6 +31,12 @@ class TestParser:
         ):
             args = parser.parse_args(argv)
             assert callable(args.handler)
+
+    def test_token_flag_overrides_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("TTS_DAEMON_TOKEN", "from-env")
+        parser = build_parser()  # env default captured at build time
+        assert parser.parse_args(["status"]).token == "from-env"
+        assert parser.parse_args(["status", "--token", "explicit"]).token == "explicit"
 
 
 class TestInitConfig:

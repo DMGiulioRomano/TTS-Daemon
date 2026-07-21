@@ -8,15 +8,17 @@ embedding straightforward.
 
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from importlib.resources import files
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from tts_daemon import __version__
 from tts_daemon.api import http, openai_compat, websocket
+from tts_daemon.api.auth import build_auth_dependency, is_loopback
 from tts_daemon.api.schemas import HealthResponse
 from tts_daemon.config import GatewayConfig, load_config
 from tts_daemon.core.errors import (
@@ -32,6 +34,8 @@ from tts_daemon.core.events import EventBus
 from tts_daemon.core.service import SpeechService
 from tts_daemon.players import create_player
 from tts_daemon.providers.registry import create_default_registry
+
+logger = logging.getLogger(__name__)
 
 #: One place that decides how each domain error surfaces over HTTP.
 ERROR_STATUS_CODES: tuple[tuple[type[Exception], int], ...] = (
@@ -81,6 +85,14 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     app.state.config = config
     app.state.service = service
 
+    if config.server.auth_token is None and not is_loopback(config.server.host):
+        logger.warning(
+            "server.host is %r (not loopback) but server.auth_token is not set: "
+            "the gateway is reachable without authentication. Set server.auth_token "
+            "(or the TTS_DAEMON__SERVER__AUTH_TOKEN env var) to require a bearer token.",
+            config.server.host,
+        )
+
     if config.server.cors_origins:
         app.add_middleware(
             CORSMiddleware,
@@ -98,8 +110,10 @@ def create_app(config: GatewayConfig | None = None) -> FastAPI:
     async def handle_value_error(_: Request, exc: ValueError) -> JSONResponse:
         return JSONResponse(status_code=status_code_for(exc), content={"detail": str(exc)})
 
-    app.include_router(http.router, prefix="/v1")
-    app.include_router(openai_compat.router, prefix="/v1")
+    auth_dependency = build_auth_dependency(config.server.auth_token)
+    v1_dependencies = [Depends(auth_dependency)] if auth_dependency is not None else []
+    app.include_router(http.router, prefix="/v1", dependencies=v1_dependencies)
+    app.include_router(openai_compat.router, prefix="/v1", dependencies=v1_dependencies)
     app.include_router(websocket.router)
 
     @app.get("/health", response_model=HealthResponse, tags=["meta"])

@@ -9,6 +9,8 @@ server:
   host: 127.0.0.1        # bind address; keep on localhost unless you trust the network
   port: 5111
   cors_origins: ["*"]    # origins allowed for browser clients
+  auth_token: null       # require "Authorization: Bearer <token>" on /v1 when set
+                         # (env: TTS_DAEMON__SERVER__AUTH_TOKEN); null = no auth
 
 speech:
   default_provider: auto # a provider name, or "auto" to pick the first available

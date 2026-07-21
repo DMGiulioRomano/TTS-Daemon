@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -107,6 +108,11 @@ def _add_url(subparser: argparse.ArgumentParser) -> None:
         default=DEFAULT_BASE_URL,
         help=f"gateway base URL (default: {DEFAULT_BASE_URL})",
     )
+    subparser.add_argument(
+        "--token",
+        default=os.environ.get("TTS_DAEMON_TOKEN"),
+        help="bearer token for an authenticated gateway (env: TTS_DAEMON_TOKEN)",
+    )
 
 
 # ------------------------------------------------------------------ handlers
@@ -150,7 +156,7 @@ def _gather_text(args: argparse.Namespace) -> str:
 
 
 def cmd_speak(args: argparse.Namespace) -> int:
-    client = GatewayClient(args.url)
+    client = GatewayClient(args.url, token=args.token)
     result = client.speak(
         _gather_text(args),
         provider=args.provider,
@@ -170,7 +176,7 @@ def cmd_speak(args: argparse.Namespace) -> int:
 
 
 def cmd_synthesize(args: argparse.Namespace) -> int:
-    client = GatewayClient(args.url)
+    client = GatewayClient(args.url, token=args.token)
     audio = client.synthesize(
         _gather_text(args), provider=args.provider, voice=args.voice, speed=args.speed
     )
@@ -183,13 +189,13 @@ def cmd_synthesize(args: argparse.Namespace) -> int:
 
 
 def cmd_stop(args: argparse.Namespace) -> int:
-    result = GatewayClient(args.url).stop()
+    result = GatewayClient(args.url, token=args.token).stop()
     print(f"cancelled {result['cancelled']} utterance(s)")
     return 0
 
 
 def cmd_status(args: argparse.Namespace) -> int:
-    status = GatewayClient(args.url).status()
+    status = GatewayClient(args.url, token=args.token).status()
     if args.json:
         print(json.dumps(status, indent=2))
         return 0
@@ -210,7 +216,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_voices(args: argparse.Namespace) -> int:
-    result = GatewayClient(args.url).voices(args.provider)
+    result = GatewayClient(args.url, token=args.token).voices(args.provider)
     if args.json:
         print(json.dumps(result, indent=2))
         return 0
@@ -226,7 +232,7 @@ def cmd_voices(args: argparse.Namespace) -> int:
 
 
 def cmd_providers(args: argparse.Namespace) -> int:
-    result = GatewayClient(args.url).providers()
+    result = GatewayClient(args.url, token=args.token).providers()
     if args.json:
         print(json.dumps(result, indent=2))
         return 0
