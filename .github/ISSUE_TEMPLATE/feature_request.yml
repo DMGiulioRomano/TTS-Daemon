@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest an improvement or new capability for tts-daemon.
+title: "[feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. For larger changes (API shapes, new endpoints,
+        streaming) please describe the design here first so it can be discussed
+        before anyone invests time — see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The use case or pain point, not just the proposed solution.
+      placeholder: "As a … I want … so that …"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should the gateway do? Sketch the API, CLI, or config if it helps.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you weighed, and why this one is better.
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This keeps the gateway's runtime dependency footprint unchanged (heavy engines belong in their own package via the entry-point mechanism).
+          required: false
+        - label: I would be willing to help implement this.
+          required: false

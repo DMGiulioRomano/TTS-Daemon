@@ -1,0 +1,67 @@
+name: Provider request
+description: Request (or propose) support for a new TTS engine.
+title: "[provider]: "
+labels: ["enhancement", "provider"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        New engines are the most-wanted contribution. Adding one is a single
+        class with two methods — see
+        [docs/providers.md](../blob/main/docs/providers.md). This form captures
+        what's needed to scope it.
+  - type: input
+    id: engine
+    attributes:
+      label: Engine name
+      placeholder: "e.g. Kokoro, Coqui XTTS, ElevenLabs"
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Project / documentation link
+      placeholder: "https://…"
+    validations:
+      required: true
+  - type: input
+    id: license
+    attributes:
+      label: License
+      description: The engine's license (matters for what can ship in-tree).
+      placeholder: "e.g. MIT, Apache-2.0, GPL-3.0, proprietary"
+    validations:
+      required: true
+  - type: dropdown
+    id: locality
+    attributes:
+      label: Local or cloud?
+      description: Cloud engines must be optional extras with a privacy note (see the edge provider).
+      options:
+        - Local (runs entirely on the user's machine)
+        - Cloud (sends text to a remote service)
+        - Both / configurable
+    validations:
+      required: true
+  - type: input
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Python package(s), a binary on PATH, an API key, a GPU?
+      placeholder: "e.g. pip package 'foo-tts'; needs an API key; CPU-only"
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Voices/languages offered, audio format (WAV/MP3/…), speed control, quirks.
+    validations:
+      required: false
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribution
+      options:
+        - label: I would be willing to implement this provider.
+          required: false

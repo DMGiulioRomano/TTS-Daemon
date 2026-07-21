@@ -8,6 +8,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Community-health files**: GitHub issue forms (bug report, feature request,
+  provider request), a pull-request template (with a `make check` / docs /
+  CHANGELOG checklist), and a Contributor Covenant `CODE_OF_CONDUCT.md`.
 - **edge-tts provider** (optional extra `pip install 'tts-daemon[edge]'`): free
   Microsoft neural voices — hundreds of languages, no API key, GPU, or model
   download — registered as the `edge` provider via the entry-point group and

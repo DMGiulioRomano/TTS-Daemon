@@ -1,0 +1,75 @@
+name: Bug report
+description: Something in tts-daemon is not working as documented.
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in the details
+        below — the environment and the `tts-daemon providers` output resolve
+        most issues quickly.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: |
+        Steps to reproduce:
+        1. `tts-daemon serve`
+        2. `tts-daemon speak "hello" --provider piper`
+        3. ...
+
+        Expected: ...
+        Actual: ...
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "e.g. Ubuntu 24.04, macOS 14.5, Windows 11"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Output of `python3 --version`.
+      placeholder: "e.g. Python 3.11.9"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: tts-daemon version
+      description: Output of `tts-daemon --version`.
+      placeholder: "e.g. tts-daemon 0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: providers
+    attributes:
+      label: "`tts-daemon providers` output"
+      description: Run `tts-daemon providers` and paste the full output here.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server log
+      description: >
+        Relevant lines from the `tts-daemon serve` output (run with
+        `TTS_DAEMON__LOGGING__LEVEL=DEBUG` for more detail). Redact anything private.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration (optional)
+      description: Your `config.yaml` and/or any `TTS_DAEMON__*` env vars, with secrets redacted.
+      render: yaml
+    validations:
+      required: false
