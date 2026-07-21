@@ -8,6 +8,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **edge-tts provider** (#15): free Microsoft neural voices with no API key,
+  GPU, or model downloads — the shortest path to a real voice. Optional extra
+  `pip install 'tts-daemon[edge]'`, lazily imported so the gateway never
+  requires it. Maps `speed` to edge's rate, passes `pitch`/`volume` options
+  through, lists voices from the package, and outputs MP3. Cloud/unofficial-API
+  caveats documented in `docs/providers.md`.
 - **OpenAI-compatible endpoint** `POST /v1/audio/speech` (#10): a drop-in for
   OpenAI's speech API — point any OpenAI TTS client's `base_url` at the gateway
   for local voices. Maps `model`/`voice`/`speed`, honors a registered provider

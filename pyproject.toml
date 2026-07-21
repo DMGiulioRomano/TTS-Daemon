@@ -39,6 +39,10 @@ dev = [
     "httpx>=0.27",
     "ruff>=0.4",
 ]
+# Free Microsoft neural voices (cloud, unofficial API); see providers/edge.py.
+edge = [
+    "edge-tts>=6.1",
+]
 
 [project.urls]
 Homepage = "https://github.com/DMGiulioRomano/TTS-Daemon"
@@ -52,6 +56,7 @@ tts-daemon = "tts_daemon.cli:main"
 [project.entry-points."tts_daemon.providers"]
 piper = "tts_daemon.providers.piper:PiperProvider"
 tone = "tts_daemon.providers.tone:ToneProvider"
+edge = "tts_daemon.providers.edge:EdgeProvider"
 
 [tool.setuptools.packages.find]
 where = ["src"]

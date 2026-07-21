@@ -130,3 +130,36 @@ Run the gateway with only your provider to try it end to end:
 TTS_DAEMON__SPEECH__DEFAULT_PROVIDER=myengine tts-daemon serve
 tts-daemon speak "testing my engine" --provider myengine
 ```
+
+## Bundled providers
+
+| Name    | Install                        | Local? | Output | Notes |
+| ------- | ------------------------------ | ------ | ------ | ----- |
+| `piper` | `pip install piper-tts` + voice models | ✅ local | WAV | The default engine; audio never leaves the machine. |
+| `tone`  | built in                       | ✅ local | WAV | Dependency-free beeps; the always-available fallback. |
+| `edge`  | `pip install 'tts-daemon[edge]'` | ☁️ cloud | MP3 | Free Microsoft neural voices, no key. |
+
+### `edge` — privacy & reliability
+
+The `edge` provider is **cloud-backed**: your text is sent to Microsoft's
+online voice service over an **unofficial** endpoint. That buys hundreds of
+high-quality voices with zero setup, but means:
+
+- **Text leaves your machine** — do not use it for anything sensitive; prefer
+  `piper` (fully local) there.
+- It needs **network access**; offline synthesis raises a `SynthesisError`.
+- The endpoint is undocumented and can change without notice.
+
+Configure a default voice and pass edge's `pitch`/`volume` through per request:
+
+```yaml
+providers:
+  edge:
+    default_voice: it-IT-ElsaNeural
+```
+
+```sh
+tts-daemon speak "ciao" --provider edge
+curl -X POST localhost:5111/v1/speak -H 'content-type: application/json' \
+  -d '{"provider":"edge","text":"hi","options":{"pitch":"+10Hz","volume":"-10%"}}'
+```
