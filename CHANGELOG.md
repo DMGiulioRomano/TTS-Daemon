@@ -8,6 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **OpenAI TTS and ElevenLabs providers** (#17): premium cloud voices, opt-in,
+  **no SDK dependency** — both talk to their API over stdlib `urllib`. Keys via
+  `providers.<name>.api_key` or `$OPENAI_API_KEY` / `$ELEVENLABS_API_KEY`;
+  `availability()` says which. OpenAI maps `speed` (clamped to 0.25–4.0) and an
+  `instructions` option; ElevenLabs fetches its voice list from the API and
+  passes `stability`/`similarity_boost` through. HTTP errors surface the API's
+  message. Privacy/cost notes in `docs/providers.md`.
 - **Kokoro provider** (#16): local high-quality neural TTS via `kokoro-onnx`
   (ONNX Runtime, CPU-friendly). Optional extra `pip install 'tts-daemon[kokoro]'`,
   lazily imported; `availability()` distinguishes package / model-file /

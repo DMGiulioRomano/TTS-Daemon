@@ -139,6 +139,8 @@ tts-daemon speak "testing my engine" --provider myengine
 | `tone`  | built in                       | ✅ local | WAV | Dependency-free beeps; the always-available fallback. |
 | `edge`  | `pip install 'tts-daemon[edge]'` | ☁️ cloud | MP3 | Free Microsoft neural voices, no key. |
 | `kokoro`| `pip install 'tts-daemon[kokoro]'` + model files | ✅ local | WAV | High-quality neural (ONNX, CPU); needs the model + voices download. |
+| `openai`| built in (needs an API key)    | ☁️ cloud | MP3 | OpenAI TTS (`tts-1`, `gpt-4o-mini-tts`, …). |
+| `elevenlabs`| built in (needs an API key) | ☁️ cloud | MP3 | ElevenLabs premium voices. |
 
 ### `edge` — privacy & reliability
 
@@ -186,3 +188,28 @@ providers:
 
 `tts-daemon providers` tells you exactly which piece is missing (package, model,
 or voices file) with the download link.
+
+### `openai` / `elevenlabs` — cloud, opt-in
+
+Both use only stdlib `urllib` (no SDK) and need an API key. **Privacy & cost:**
+your text is sent to the provider and billed per character — keep them for cases
+where the premium voice is worth it, and use a local engine otherwise.
+
+```yaml
+providers:
+  openai:
+    api_key: sk-...          # or the OPENAI_API_KEY env var
+    model: gpt-4o-mini-tts   # or tts-1 / tts-1-hd
+    default_voice: alloy
+  elevenlabs:
+    api_key: ...             # or the ELEVENLABS_API_KEY env var
+    model_id: eleven_multilingual_v2
+    default_voice: 21m00Tcm4TlvDq8ikWAM
+```
+
+```sh
+tts-daemon speak "premium voice" --provider openai --voice nova
+# ElevenLabs voice_settings pass through as options:
+curl -X POST localhost:5111/v1/speak -H 'content-type: application/json' \
+  -d '{"provider":"elevenlabs","text":"hi","options":{"stability":0.4,"similarity_boost":0.8}}'
+```

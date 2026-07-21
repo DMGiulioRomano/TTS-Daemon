@@ -62,6 +62,8 @@ piper = "tts_daemon.providers.piper:PiperProvider"
 tone = "tts_daemon.providers.tone:ToneProvider"
 edge = "tts_daemon.providers.edge:EdgeProvider"
 kokoro = "tts_daemon.providers.kokoro:KokoroProvider"
+openai = "tts_daemon.providers.openai_tts:OpenAITTSProvider"
+elevenlabs = "tts_daemon.providers.elevenlabs:ElevenLabsProvider"
 
 [tool.setuptools.packages.find]
 where = ["src"]
