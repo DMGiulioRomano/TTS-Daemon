@@ -131,7 +131,8 @@ _INDEX_HTML = f"""\
 <p>Endpoints: <code>POST /v1/speak</code>, <code>POST /v1/stop</code>,
 <code>POST /v1/synthesize</code>, <code>GET /v1/status</code>,
 <code>GET /v1/voices</code>, <code>GET /v1/providers</code>,
-<code>WS /v1/ws</code>, <code>GET /health</code></p>
+<code>GET /v1/events</code>, <code>WS /v1/ws</code>,
+<code>GET /health</code></p>
 </body>
 </html>
 """

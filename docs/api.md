@@ -193,6 +193,38 @@ Delivery notes: each event's `data` is a snapshot taken at publish time and
 is authoritative; cross-event *ordering* is best-effort. Slow consumers have
 oldest events dropped rather than stalling playback (buffer: 256 events).
 
+## `GET /v1/events` (Server-Sent Events)
+
+The same event stream as the WebSocket, over SSE — native `EventSource` in
+browsers and trivially consumable from the shell:
+
+```sh
+curl -N localhost:5111/v1/events
+# : connected
+# event: utterance.speaking
+# data: {"type":"utterance.speaking","data":{"id":"…","state":"speaking",…},"timestamp":…}
+# : ping
+```
+
+Each frame's `event:` field is the event type; its `data:` field is the full
+event object (`type`, `data`, `timestamp`) — the same payload the WebSocket
+`event` message carries in its `event` key. A `: ping` comment is sent every
+~15 s so proxies don't reap an idle stream, and the same drop-oldest policy
+applies to slow consumers.
+
+Filter to specific types with a comma-separated `types` query parameter:
+
+```sh
+curl -N 'localhost:5111/v1/events?types=utterance.finished,queue.cleared'
+```
+
+In a browser:
+
+```js
+const es = new EventSource("http://localhost:5111/v1/events");
+es.addEventListener("utterance.finished", (e) => console.log(JSON.parse(e.data)));
+```
+
 ## Client libraries
 
 - Python (stdlib-only, bundled): `tts_daemon.client.GatewayClient` — see

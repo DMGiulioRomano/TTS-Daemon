@@ -7,12 +7,16 @@ lives in the app-level exception handlers.
 
 from __future__ import annotations
 
+import asyncio
+import json
+from collections.abc import AsyncIterator
 from typing import Any
 
 import anyio.to_thread
 from fastapi import APIRouter, Query, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
+from tts_daemon.api.event_bridge import subscribe_async_queue
 from tts_daemon.api.schemas import (
     ErrorResponse,
     ProvidersResponse,
@@ -23,9 +27,14 @@ from tts_daemon.api.schemas import (
     SynthesizeRequest,
     VoicesResponse,
 )
+from tts_daemon.core.events import Event
 from tts_daemon.core.service import SpeechService
 
 router = APIRouter()
+
+#: Seconds of idleness before an SSE heartbeat comment is emitted, so proxies
+#: don't reap an otherwise silent long-lived connection.
+_SSE_HEARTBEAT_SECONDS = 15.0
 
 _ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
     404: {"model": ErrorResponse, "description": "Unknown provider"},
@@ -156,3 +165,65 @@ async def voices(
 async def providers(request: Request) -> ProvidersResponse:
     info = await anyio.to_thread.run_sync(get_service(request).providers_info)
     return ProvidersResponse.model_validate({"providers": info})
+
+
+@router.get(
+    "/events",
+    summary="Live gateway events as a Server-Sent Events stream",
+    tags=["meta"],
+    responses={200: {"content": {"text/event-stream": {}}, "description": "SSE event stream"}},
+)
+async def events(
+    request: Request,
+    types: str | None = Query(
+        default=None,
+        description="Comma-separated event types to include (e.g. "
+        "'utterance.finished,queue.cleared'); all events when omitted.",
+    ),
+) -> StreamingResponse:
+    """Stream every gateway event as SSE frames.
+
+    Each frame carries the event type in the ``event:`` field and the full
+    event object (``type``, ``data``, ``timestamp`` — the same payload a
+    WebSocket client receives) as JSON in ``data:``. Consumable with a browser
+    ``EventSource`` or ``curl -N``. A comment heartbeat keeps idle streams
+    alive; the buffer drops the oldest event for slow consumers, matching the
+    WebSocket policy.
+    """
+    wanted = {part.strip() for part in types.split(",") if part.strip()} if types else None
+    service = get_service(request)
+    stream = _event_stream(request, service, wanted)
+    return StreamingResponse(
+        stream,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # disable proxy buffering (nginx)
+        },
+    )
+
+
+def _sse_frame(event: Event) -> str:
+    payload = json.dumps(event.to_dict(), separators=(",", ":"))
+    return f"event: {event.type}\ndata: {payload}\n\n"
+
+
+async def _event_stream(
+    request: Request, service: SpeechService, types: set[str] | None
+) -> AsyncIterator[str]:
+    loop = asyncio.get_running_loop()
+    queue, unsubscribe = subscribe_async_queue(service, loop)
+    try:
+        yield ": connected\n\n"  # open the stream so the client sees 200 immediately
+        while not await request.is_disconnected():
+            try:
+                event = await asyncio.wait_for(queue.get(), timeout=_SSE_HEARTBEAT_SECONDS)
+            except (TimeoutError, asyncio.TimeoutError):
+                yield ": ping\n\n"
+                continue
+            if types is not None and event.type not in types:
+                continue
+            yield _sse_frame(event)
+    finally:
+        unsubscribe()

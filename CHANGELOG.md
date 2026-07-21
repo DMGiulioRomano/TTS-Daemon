@@ -8,6 +8,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Server-Sent Events endpoint** `GET /v1/events` (#14): the live gateway
+  event stream over SSE (native `EventSource` / `curl -N`), with an optional
+  `?types=` filter and comment heartbeats. The thread→asyncio event bridge is
+  now shared between the WebSocket and SSE endpoints
+  (`api/event_bridge.py`).
 - **Community health files** (#7): YAML issue forms for bug reports, feature
   requests, and provider requests (`.github/ISSUE_TEMPLATE/`), a pull-request
   template, and a Contributor Covenant `CODE_OF_CONDUCT.md`.
