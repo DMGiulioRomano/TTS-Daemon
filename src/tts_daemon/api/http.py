@@ -215,7 +215,9 @@ async def sse_event_stream(
         while True:
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=heartbeat)
-            except TimeoutError:
+            # asyncio.TimeoutError is distinct from builtin TimeoutError before
+            # Python 3.11; catch the asyncio one so the heartbeat works on 3.10.
+            except asyncio.TimeoutError:
                 yield ": ping\n\n"  # heartbeat comment; ignored by clients
                 continue
             if wanted is None or event.type in wanted:
