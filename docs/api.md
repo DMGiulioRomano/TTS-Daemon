@@ -148,6 +148,38 @@ found on PATH...").
 { "status": "ok", "version": "0.1.0" }
 ```
 
+## `GET /v1/events`
+
+A read-only live event stream as [Server-Sent Events][sse] — the same
+payloads the WebSocket pushes as `event` messages, but consumable with plain
+`curl` or a browser `EventSource`, no WebSocket client required.
+
+```sh
+curl -N localhost:5111/v1/events
+# : connected
+# event: utterance.speaking
+# data: {"type":"utterance.speaking","data":{"id":"5e7136b47ba1",...},"timestamp":...}
+```
+
+Each event is one SSE frame: an `event:` line (the event type) followed by a
+`data:` line (the JSON payload). Lines beginning with `:` are comments — an
+opening `: connected` and a `: ping` heartbeat every ~15 s so idle streams
+survive proxies.
+
+| Query   | Notes                                                                  |
+| ------- | ---------------------------------------------------------------------- |
+| `types` | Comma-separated event types to include, e.g. `?types=utterance.finished,queue.cleared`. All events when omitted. |
+
+Same event types, snapshot semantics, and slow-consumer policy (oldest
+dropped, 256-event buffer) as the WebSocket stream below. In a browser:
+
+```js
+const es = new EventSource("/v1/events");
+es.addEventListener("utterance.finished", (e) => console.log(JSON.parse(e.data)));
+```
+
+[sse]: https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
+
 ## WebSocket: `/v1/ws`
 
 One socket gives you both a command channel and a live event stream (all

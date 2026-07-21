@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **SSE events endpoint** (`GET /v1/events`): the live gateway event stream as
+  Server-Sent Events, consumable with plain `curl -N` or a browser
+  `EventSource` — no WebSocket client needed. Supports a `?types=` filter,
+  emits a `: ping` heartbeat every ~15 s, and reuses the WebSocket's
+  snapshot/slow-consumer semantics. The thread→asyncio event bridge is now a
+  shared `api/event_bridge.py` helper used by both the WebSocket and SSE.
+
 ## [0.1.0] - 2026-07-21
 
 First public release.

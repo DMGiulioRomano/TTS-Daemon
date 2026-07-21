@@ -37,6 +37,7 @@ from typing import Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
+from tts_daemon.api.event_bridge import subscribe_event_queue
 from tts_daemon.api.schemas import SpeakRequest
 from tts_daemon.core.errors import GatewayError
 from tts_daemon.core.events import Event
@@ -46,19 +47,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_EVENT_BUFFER = 256
-
-
-def _offer(queue: asyncio.Queue[Event], event: Event) -> None:
-    """Enqueue, dropping the oldest event when the buffer is full."""
-    while True:
-        try:
-            queue.put_nowait(event)
-            return
-        except asyncio.QueueFull:
-            with contextlib.suppress(asyncio.QueueEmpty):
-                queue.get_nowait()
-
 
 @router.websocket("/v1/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
@@ -66,15 +54,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
 
     loop = asyncio.get_running_loop()
-    event_queue: asyncio.Queue[Event] = asyncio.Queue(maxsize=_EVENT_BUFFER)
-
-    def forward(event: Event) -> None:
-        # Called on the playback worker thread; hop onto the loop. The loop
-        # may already be closing when the server shuts down mid-event.
-        with contextlib.suppress(RuntimeError):
-            loop.call_soon_threadsafe(_offer, event_queue, event)
-
-    unsubscribe = service.events.subscribe(forward)
+    event_queue, unsubscribe = subscribe_event_queue(service.events, loop)
     sender = asyncio.create_task(_send_events(websocket, event_queue))
     try:
         while True:
