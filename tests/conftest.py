@@ -31,6 +31,9 @@ def make_config(**overrides: Any) -> GatewayConfig:
     data: dict[str, Any] = {
         "speech": {"default_provider": "tone", "queue_size": 8, "history_size": 10},
         "playback": {"backend": "null"},
+        # Off by default so tests never touch the real ~/.cache; the cache
+        # suite enables it against a tmp_path instead.
+        "cache": {"enabled": False},
     }
     for key, value in overrides.items():
         if isinstance(value, dict) and isinstance(data.get(key), dict):

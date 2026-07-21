@@ -57,6 +57,16 @@ class TTSProvider(ABC):
         """
         return Availability.ok()
 
+    def cache_fingerprint(self, request: SynthesisRequest) -> str:
+        """Extra material folded into the synthesis cache key for this request.
+
+        The gateway already keys the cache on provider name, voice, speed,
+        options, and text. Override this to add engine state that those don't
+        capture — e.g. the mtime of the resolved voice model — so that swapping
+        a model file invalidates cached audio. The default adds nothing.
+        """
+        return ""
+
     def close(self) -> None:  # noqa: B027 - optional hook, a no-op default is the contract
         """Release resources (subprocesses, HTTP sessions). Idempotent."""
 

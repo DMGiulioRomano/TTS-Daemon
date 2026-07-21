@@ -8,6 +8,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **On-disk synthesis cache** (#13): repeated phrases replay from a
+  content-addressed cache (`$XDG_CACHE_HOME/tts-daemon`) instead of being
+  re-synthesized. Configurable `cache: {enabled, max_mb}` with size-based LRU
+  eviction, atomic writes, corruption-as-miss recovery, per-request
+  `options: {"no_cache": true}` bypass, and `cache` stats in `GET /v1/status`.
+  Providers can refine the key via `TTSProvider.cache_fingerprint` (piper mixes
+  in its model file mtime so swapping a model invalidates the cache).
 - **Server-Sent Events endpoint** `GET /v1/events` (#14): the live gateway
   event stream over SSE (native `EventSource` / `curl -N`), with an optional
   `?types=` filter and comment heartbeats. The thread→asyncio event bridge is

@@ -77,6 +77,13 @@ class PlaybackConfig(_StrictModel):
         return "null" if value is None else value
 
 
+class CacheConfig(_StrictModel):
+    """On-disk cache of synthesized clips (see ``core.cache``)."""
+
+    enabled: bool = True
+    max_mb: int = Field(default=200, ge=1)
+
+
 class LoggingConfig(_StrictModel):
     level: str = "INFO"
 
@@ -87,6 +94,7 @@ class GatewayConfig(_StrictModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     speech: SpeechConfig = Field(default_factory=SpeechConfig)
     playback: PlaybackConfig = Field(default_factory=PlaybackConfig)
+    cache: CacheConfig = Field(default_factory=CacheConfig)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     # Free-form per-provider settings; each provider validates its own section.
     providers: dict[str, dict[str, Any]] = Field(default_factory=dict)
@@ -234,6 +242,12 @@ playback:
                          #   ["ffplay", "-autoexit", "-nodisp", "-loglevel", "quiet", "{file}"]
                          # "{file}" is replaced with a temp audio file; without
                          # it, audio bytes are piped to the command's stdin.
+
+cache:
+  enabled: true          # cache synthesized clips on disk; repeated phrases replay instantly
+  max_mb: 200            # size budget; least-recently-used clips are evicted past it
+                         # (location: $XDG_CACHE_HOME/tts-daemon, i.e. ~/.cache/tts-daemon)
+                         # bypass a single request with options: {"no_cache": true}
 
 logging:
   level: INFO

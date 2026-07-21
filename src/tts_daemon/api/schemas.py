@@ -102,11 +102,21 @@ class QueueModel(BaseModel):
     max_size: int
 
 
+class CacheModel(BaseModel):
+    entries: int
+    size_mb: float
+    hits: int
+    misses: int
+
+
 class StatusResponse(BaseModel):
     queue: QueueModel
     default_provider: str | None
     default_provider_error: str | None = None
     playback_available: bool
+    cache: CacheModel | None = Field(
+        default=None, description="Synthesis cache stats, or null when the cache is disabled."
+    )
 
 
 class HealthResponse(BaseModel):

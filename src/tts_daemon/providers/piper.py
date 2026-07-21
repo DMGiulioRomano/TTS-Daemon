@@ -151,6 +151,18 @@ class PiperProvider(TTSProvider):
             )
         return voices
 
+    def cache_fingerprint(self, request: SynthesisRequest) -> str:
+        """Mix the resolved model file's path and mtime into the cache key.
+
+        Swapping a voice model in place (same name, new file) then changes the
+        fingerprint, so stale audio is never served from the cache.
+        """
+        try:
+            model = self._resolve_model(request.voice)
+            return f"{model}:{model.stat().st_mtime_ns}"
+        except (SynthesisError, OSError):
+            return ""  # unresolved voice: fall back to the default key material
+
     def availability(self) -> Availability:
         if shutil.which(self._binary) is None:
             return Availability.unavailable(

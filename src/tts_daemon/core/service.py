@@ -8,9 +8,11 @@ the playback queue, and shutdown. Nothing here knows about FastAPI.
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from typing import Any
 
 from tts_daemon.config import GatewayConfig
+from tts_daemon.core.cache import SynthesisCache, default_cache_dir
 from tts_daemon.core.errors import ProviderUnavailableError
 from tts_daemon.core.events import EventBus
 from tts_daemon.core.interfaces import AudioPlayer, TTSProvider
@@ -43,6 +45,9 @@ class SpeechService:
             max_size=config.speech.queue_size,
             history_size=config.speech.history_size,
         )
+        self._cache: SynthesisCache | None = None
+        if config.cache.enabled:
+            self._cache = SynthesisCache(default_cache_dir(), config.cache.max_mb * 1024 * 1024)
         self._closed = False
 
     @property
@@ -75,7 +80,7 @@ class SpeechService:
         utterance = Utterance(request, chosen.name)
         if interrupt:
             self._queue.clear()
-        self._queue.submit(utterance, lambda: chosen.synthesize(request))
+        self._queue.submit(utterance, lambda: self._synthesize_cached(chosen, request))
         return utterance
 
     def synthesize(
@@ -89,7 +94,32 @@ class SpeechService:
     ) -> AudioClip:
         """Synthesize and return audio without queueing or playing it."""
         request = self._build_request(text, voice=voice, speed=speed, options=options)
-        return self.resolve_provider(provider).synthesize(request)
+        return self._synthesize_cached(self.resolve_provider(provider), request)
+
+    def _synthesize_cached(self, provider: TTSProvider, request: SynthesisRequest) -> AudioClip:
+        """Synthesize ``request`` via ``provider``, consulting the on-disk cache.
+
+        The gateway-only ``no_cache`` option is stripped here (providers reject
+        unknown options) and, when truthy, forces a fresh synthesis. Cache
+        misses populate the cache; a disabled cache is a straight passthrough.
+        """
+        if "no_cache" in request.options:
+            options = request.options
+            bypass = bool(options["no_cache"])
+            request = replace(
+                request, options={k: v for k, v in options.items() if k != "no_cache"}
+            )
+        else:
+            bypass = False
+        if self._cache is None or bypass:
+            return provider.synthesize(request)
+        key = self._cache.key(provider.name, request, provider.cache_fingerprint(request))
+        cached = self._cache.get(key)
+        if cached is not None:
+            return cached
+        clip = provider.synthesize(request)
+        self._cache.put(key, clip)
+        return clip
 
     def stop(self) -> int:
         """Cancel pending speech and interrupt playback; returns count affected."""
@@ -108,6 +138,7 @@ class SpeechService:
             "default_provider": default_name,
             "default_provider_error": default_error,
             "playback_available": self._player.availability().available,
+            "cache": self._cache.stats() if self._cache is not None else None,
         }
 
     def find_utterance(self, utterance_id: str) -> dict[str, Any] | None:
