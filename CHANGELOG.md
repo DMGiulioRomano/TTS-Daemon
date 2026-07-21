@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-20
+
+First PyPI release (distribution `tts-daemon`).
+
 ### Added
 
 - README rebuilt as a conversion funnel: centered logo (new `assets/`
@@ -17,8 +21,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `scripts/install.sh` one-line installer.
 - Demo assets: `assets/demo.gif` shown in the README, with a committed
   VHS script (`assets/demo.tape`) so it can be regenerated after UI
-  changes; audio samples page for GitHub Pages (`docs/samples/`) with a
-  reproducible generation script (`scripts/make_samples.sh`).
+  changes; a second `assets/hook.gif` (+ `assets/hook.tape`) showing the
+  Claude Code hook in the integrations section; audio samples page for
+  GitHub Pages (`docs/samples/`) with a reproducible generation script
+  (`scripts/make_samples.sh`).
 - Release automation: pushing a `v*` tag now builds the package, publishes
   it to PyPI via trusted publishing (OIDC), and creates a GitHub Release
   with notes extracted from this changelog (`.github/workflows/release.yml`,
@@ -79,5 +85,6 @@ First release.
 - **Tests**: 188 unit + integration tests (queue concurrency, fake-piper
   subprocess suite, full REST/WebSocket contract).
 
-[Unreleased]: https://github.com/DMGiulioRomano/TTS-Gateway/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/DMGiulioRomano/TTS-Gateway/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/DMGiulioRomano/TTS-Gateway/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/DMGiulioRomano/TTS-Gateway/releases/tag/v0.1.0

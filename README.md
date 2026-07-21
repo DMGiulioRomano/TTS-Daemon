@@ -176,6 +176,11 @@ curl -X POST localhost:5111/v1/speak -H 'content-type: application/json' \
   (`tts_gateway.client.GatewayClient`) and [examples](examples) for REST and
   WebSocket.
 
+<p align="center">
+  <img src="assets/hook.gif" alt="Claude Code hook: Claude's replies spoken aloud through the gateway" width="720">
+  <br><sub>The Claude Code hook speaking a reply (and a notification) through the gateway.</sub>
+</p>
+
 ## Configuration
 
 Optional — the defaults just work. Generate an annotated config with

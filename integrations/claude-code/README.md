@@ -4,6 +4,11 @@ Have Claude Code talk to you: hear a summary of each reply when Claude
 finishes, and hear notifications (permission requests, idle prompts) as they
 happen — all through your local tts-gateway.
 
+![Claude Code hook demo](../../assets/hook.gif)
+
+*(Recording scripted in [`assets/hook.tape`](../../assets/hook.tape); regenerate
+with `vhs assets/hook.tape`.)*
+
 ## Setup
 
 1. Start the gateway (`tts-gateway serve`) — or install it as a service, see
