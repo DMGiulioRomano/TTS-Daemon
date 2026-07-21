@@ -118,6 +118,8 @@ downloads, macOS/Linux audio notes, running as a service):
   cancels everything and speaks now. `POST /v1/stop` silences the room.
 - **Anything can talk.** REST + WebSocket + CLI + a browser userscript + a
   Claude Code hook, all included and all tiny.
+- **OpenAI-compatible.** Point any OpenAI TTS client at it (`base_url`) and get
+  free, private, local voices from `POST /v1/audio/speech`.
 - **Local-first.** Binds to `127.0.0.1` by default; with Piper, audio never
   leaves your machine.
 - **Small.** Four runtime dependencies: FastAPI, uvicorn, pydantic, PyYAML.

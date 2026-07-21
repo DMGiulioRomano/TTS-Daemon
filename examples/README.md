@@ -7,6 +7,7 @@ All examples expect a running gateway (`tts-daemon serve`).
 | [`curl.sh`](./curl.sh)                           | Every REST endpoint from the shell                        |
 | [`python_client.py`](./python_client.py)         | The bundled `GatewayClient`: speak, wait, interrupt       |
 | [`websocket_client.py`](./websocket_client.py)   | The WebSocket protocol and live utterance events          |
+| [`openai_compat.py`](./openai_compat.py)         | The official OpenAI client pointed at the local gateway   |
 
 Also see the ready-to-use integrations:
 

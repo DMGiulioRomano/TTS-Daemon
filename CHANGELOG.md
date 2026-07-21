@@ -22,6 +22,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   default), per-request `no_cache` option to bypass, and cache stats
   (`entries`, `size_mb`, `hits`, `misses`) in `GET /v1/status`. Atomic writes
   and corruption-tolerant (a broken cache is a miss, never an error).
+- **OpenAI-compatible endpoint** (`POST /v1/audio/speech`): a drop-in for
+  OpenAI's speech API, so any OpenAI TTS client synthesizes locally by pointing
+  its `base_url` at the gateway. Maps `model` (generic names → default provider,
+  a provider name selects it), `voice` (via a new `openai_compat.voice_aliases`
+  config section, falling back to the provider default), and `speed`; `wav`
+  response format supported (others → 422). Runnable `examples/openai_compat.py`
+  using the official `openai` client.
 
 ## [0.1.0] - 2026-07-21
 

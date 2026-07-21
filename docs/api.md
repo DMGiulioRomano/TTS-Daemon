@@ -80,6 +80,34 @@ curl -X POST localhost:5111/v1/synthesize -H 'content-type: application/json' \
   -d '{"text": "saved, not spoken"}' -o clip.wav
 ```
 
+## `POST /v1/audio/speech` (OpenAI-compatible)
+
+A drop-in for OpenAI's speech endpoint: point any OpenAI TTS client at the
+gateway's `/v1` base URL and it synthesizes locally instead.
+
+Request (OpenAI's schema):
+
+| Field             | Type   | Default    | Notes                                                        |
+| ----------------- | ------ | ---------- | ------------------------------------------------------------ |
+| `model`           | string | *required* | `tts-1`/`tts-1-hd` → gateway default provider; a registered provider name (`piper`, `tone`) selects it explicitly. |
+| `input`           | string | *required* | Text to speak.                                               |
+| `voice`           | string | *required* | Mapped via `openai_compat.voice_aliases`; an unmapped standard OpenAI voice (`alloy`, `nova`, …) falls back to the provider default; anything else is passed through as a provider voice id. |
+| `response_format` | string | *unset*    | Only `wav` is supported today; other values → 422.          |
+| `speed`           | number | `1.0`      | OpenAI range `0.25`–`4.0`.                                   |
+
+Returns raw audio bytes (`audio/wav`). An `Authorization` header is accepted
+and ignored (until [#18](https://github.com/DMGiulioRomano/TTS-Daemon/issues/18)).
+
+```python
+from openai import OpenAI
+client = OpenAI(base_url="http://127.0.0.1:5111/v1", api_key="unused")
+client.audio.speech.create(
+    model="tts-1", voice="alloy", input="Hello", response_format="wav",
+).stream_to_file("out.wav")  # → synthesized by the gateway's provider, locally
+```
+
+See [examples/openai_compat.py](../examples/openai_compat.py).
+
 ## `POST /v1/stop`
 
 Cancel every queued utterance and interrupt the one playing.

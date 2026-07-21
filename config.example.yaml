@@ -31,6 +31,10 @@ cache:
   max_mb: 200            # size budget; least-recently-used clips are evicted
   dir: null              # storage dir; default: $XDG_CACHE_HOME/tts-daemon (~/.cache/...)
 
+openai_compat:           # POST /v1/audio/speech (drop-in for OpenAI TTS clients)
+  voice_aliases: {}      # map OpenAI voice names to provider voices, e.g.
+                         #   alloy: en_US-lessac-medium
+
 logging:
   level: INFO
 
