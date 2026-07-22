@@ -27,6 +27,28 @@ def receive_until(ws: WebSocketTestSession, predicate, limit: int = 50) -> dict[
     raise AssertionError("expected message never arrived")
 
 
+class TestServableUnderUvicorn:
+    """The tests below drive the app in-process; a real deployment does not.
+
+    ``TestClient`` speaks WebSocket itself, so every test in this file passes
+    even when ``tts-daemon serve`` cannot accept a single WS handshake: uvicorn
+    needs a separate WebSocket implementation, and without one it logs "No
+    supported WebSocket library detected" and rejects /v1/ws outright. That is
+    a packaging fact no in-process test can observe, so assert it directly.
+    """
+
+    def test_a_websocket_implementation_is_installed(self) -> None:
+        import importlib.util
+
+        installed = [
+            name for name in ("websockets", "wsproto") if importlib.util.find_spec(name) is not None
+        ]
+        assert installed, (
+            "uvicorn cannot serve /v1/ws without a WebSocket implementation; "
+            "keep 'websockets' among the runtime dependencies in pyproject.toml"
+        )
+
+
 class TestCommands:
     def test_ping_pong_with_correlation_id(self, client: TestClient) -> None:
         with client.websocket_connect("/v1/ws") as ws:

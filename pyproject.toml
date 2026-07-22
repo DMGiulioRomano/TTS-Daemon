@@ -31,6 +31,10 @@ dependencies = [
     "uvicorn>=0.27",
     "pydantic>=2.5",
     "PyYAML>=6.0",
+    # uvicorn cannot serve /v1/ws (nor the playground event stream) without a
+    # WebSocket implementation; uvicorn[standard] would also pull in httptools,
+    # uvloop and watchfiles, which the gateway does not use.
+    "websockets>=12",
 ]
 
 [project.optional-dependencies]
@@ -69,6 +73,9 @@ where = ["src"]
 testpaths = ["tests"]
 addopts = "-q"
 filterwarnings = ["error::DeprecationWarning:tts_daemon.*"]
+markers = [
+    "real_entry_points: let the registry discover installed entry-point plugins",
+]
 
 [tool.ruff]
 line-length = 100
