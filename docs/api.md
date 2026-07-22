@@ -40,6 +40,16 @@ Request:
 | `interrupt` | boolean | `false`        | Cancel queued + current speech first.            |
 | `wait`      | boolean | `false`        | Block until the utterance reaches a terminal state. |
 
+> **No request-level `volume`.** Loudness is your OS mixer's job, so there is
+> deliberately no top-level `volume` field — requests carry `speed` (a universal
+> rate multiplier) but not volume. The request models reject unknown fields, so
+> sending `"volume": ...` returns **422**. The one exception is engine-native
+> loudness exposed through `options`: the `edge` provider accepts
+> `options.volume` (e.g. `"-20%"`), passed straight to edge-tts. A first-class
+> `volume` field will be reconsidered only once at least two backends support it
+> natively — the [API-stability rule](../CONTRIBUTING.md) makes removing a
+> half-working field painful later.
+
 ```sh
 curl -X POST localhost:5111/v1/speak -H 'content-type: application/json' \
   -d '{"text": "Deploy finished", "interrupt": true}'

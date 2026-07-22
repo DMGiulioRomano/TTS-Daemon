@@ -121,6 +121,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   response format supported (others → 422). Runnable `examples/openai_compat.py`
   using the official `openai` client.
 
+### Changed
+
+- **CI now includes a Windows job** (`windows-latest`, Python 3.12) alongside
+  Ubuntu and macOS, and the `winsound` fallback player finally has smoke
+  coverage (import/selection, the WAV `SND_MEMORY` path, MP3 rejection, error
+  mapping, and `SND_PURGE` on stop) — driven through a monkeypatched
+  `winsound.PlaySound`, so the Windows runner stays silent and deterministic.
+- **Loudness is documented as the OS mixer's job**: there is deliberately no
+  request-level `volume` field (requests carry `speed` only; the request models
+  reject unknown fields, so `volume` returns 422). Engine-native loudness stays
+  available through `options` where a backend supports it (the `edge` provider's
+  `options.volume`). Documented in `docs/api.md`; a first-class field will be
+  revisited only once ≥2 backends support it natively.
+- The Starlette `TestClient` deprecation warning ("use httpx2") is now filtered
+  by message so the test run is warning-free; it is external and tracked, to be
+  dropped when a Starlette release supports httpx2.
+
 ### Fixed
 
 - **WebSocket endpoints now work outside the test suite**: `websockets` is a
