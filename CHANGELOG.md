@@ -35,8 +35,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the language per request (unknown options rejected), and `voices()` lists the
   bundled voice names from the voices file. Output is WAV (a new stdlib-only
   `providers/_audio.floats_to_wav` helper, shared with the tone provider). No
-  new runtime dependency. Downloading the model/voices pair via `tts-daemon
-  download` is tracked as a follow-up.
+  new runtime dependency.
+- **`tts-daemon download kokoro`**: the built-in downloader now fetches the
+  kokoro model/voices pair as well as Piper voices. `kokoro` is a reserved
+  `download` target (distinct from a Piper voice id) that grabs both
+  `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the pinned kokoro-onnx release
+  into `~/.local/share/tts-daemon/kokoro/` — respecting the
+  `providers.kokoro.model_path` / `voices_path` overrides and `--models-dir`.
+  Streams to a `*.part` sidecar and renames atomically, idempotent (skips
+  present files, `--force` re-fetches), mirroring the Piper downloader. The
+  kokoro release publishes no digest manifest, so only the download's
+  `Content-Length` is verified (a truncated file is refused, never installed);
+  `docs/configuration.md` now points at the command instead of a manual `curl`.
+  Still stdlib `urllib` only — no new runtime dependency.
 - **Community-health files**: GitHub issue forms (bug report, feature request,
   provider request), a pull-request template (with a `make check` / docs /
   CHANGELOG checklist), and a Contributor Covenant `CODE_OF_CONDUCT.md`.

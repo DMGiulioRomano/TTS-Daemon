@@ -136,14 +136,24 @@ Bypass the cache for a single request with the `no_cache` option, e.g.
 A small, high-quality **local** neural engine (~82M params) via
 [`kokoro-onnx`](https://github.com/thewh1teagle/kokoro-onnx) (ONNX Runtime,
 CPU-friendly). Fully offline — nothing leaves the machine. Install the extra and
-download the model + voices files once:
+download the model + voices pair once:
 
 ```sh
 pip install 'tts-daemon[kokoro]'
-mkdir -p ~/.local/share/tts-daemon/kokoro && cd ~/.local/share/tts-daemon/kokoro
-curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
-curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
+tts-daemon download kokoro
 ```
+
+`download kokoro` is a reserved target (distinct from a Piper voice id): it
+fetches both `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the pinned
+kokoro-onnx release into `~/.local/share/tts-daemon/kokoro/` (or wherever
+`providers.kokoro.model_path` / `voices_path` point). It streams to a `*.part`
+sidecar and renames atomically, skips files already present (pass `--force` to
+refetch), and honours `--models-dir` to place the pair elsewhere. The release
+publishes no checksum manifest, so — like a Piper voice without an md5 digest —
+only the download's `Content-Length` is verified; a truncated file is refused
+rather than installed. You can still fetch the two files by hand from
+<https://github.com/thewh1teagle/kokoro-onnx/releases/tag/model-files-v1.0> if
+you prefer.
 
 | Key             | Default                                             | Meaning                                                    |
 | --------------- | --------------------------------------------------- | ---------------------------------------------------------- |

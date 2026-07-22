@@ -76,8 +76,8 @@ class MyEngineProvider(TTSProvider):
 - **tone** — dependency-free beeps, so the gateway works with nothing installed.
 - **kokoro** *(optional extra, `pip install 'tts-daemon[kokoro]'`)* — a small,
   high-quality **local** neural engine (~82M params) via `kokoro-onnx`. Fully
-  offline like piper; needs a model + voices file downloaded once (see
-  `configuration.md`).
+  offline like piper; needs a model + voices file downloaded once with
+  `tts-daemon download kokoro` (see `configuration.md`).
 - **edge** *(optional extra, `pip install 'tts-daemon[edge]'`)* — free Microsoft
   neural voices through the `edge-tts` package.
 - **openai** — OpenAI's cloud TTS (`gpt-4o-mini-tts`, `tts-1`, `tts-1-hd`) over
