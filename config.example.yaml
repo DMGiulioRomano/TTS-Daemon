@@ -56,3 +56,14 @@ providers:
     # voices_path: null  # voices file; default: ~/.local/share/tts-daemon/kokoro/voices-v1.0.bin
     default_voice: af_sarah
     lang: en-us          # language for grapheme-to-phoneme (override per request via options.lang)
+  openai:                # cloud, opt-in, no SDK/extra (paid, text leaves the machine)
+    # api_key: null      # or set $OPENAI_API_KEY
+    model: gpt-4o-mini-tts   # also tts-1, tts-1-hd
+    default_voice: alloy
+    # base_url: https://api.openai.com/v1
+    timeout_seconds: 30
+  elevenlabs:            # cloud, opt-in, no SDK/extra (paid, text leaves the machine)
+    # api_key: null      # or set $ELEVENLABS_API_KEY
+    model_id: eleven_multilingual_v2
+    default_voice: 21m00Tcm4TlvDq8ikWAM   # stock "Rachel" voice
+    timeout_seconds: 30

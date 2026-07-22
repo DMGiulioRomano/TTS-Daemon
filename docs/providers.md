@@ -80,14 +80,21 @@ class MyEngineProvider(TTSProvider):
   `configuration.md`).
 - **edge** *(optional extra, `pip install 'tts-daemon[edge]'`)* — free Microsoft
   neural voices through the `edge-tts` package.
+- **openai** — OpenAI's cloud TTS (`gpt-4o-mini-tts`, `tts-1`, `tts-1-hd`) over
+  stdlib `urllib` (no SDK, no extra). Opt-in with an API key.
+- **elevenlabs** — ElevenLabs' cloud TTS over stdlib `urllib` (no SDK, no extra).
+  Opt-in with an API key.
 
-> **Cloud providers, be honest in your docs.** `edge` is *cloud-backed*: text is
-> sent to Microsoft over an *unofficial* endpoint that needs network access and
-> can change without notice. It is lazily imported and shipped as an opt-in
-> extra so the gateway never requires it, and it is deliberately **not** in the
-> default `provider_priority`. If you contribute another cloud engine, follow
-> the same rules — optional extra, lazy import, and a privacy note here and in
-> `configuration.md`.
+> **Cloud providers, be honest in your docs.** `edge`, `openai`, and
+> `elevenlabs` are *cloud-backed*: the text you synthesize leaves the machine.
+> `edge` uses an *unofficial* Microsoft endpoint (can change without notice);
+> `openai` and `elevenlabs` are *paid* APIs billed per character. All three need
+> network access and are deliberately **not** in the default `provider_priority`
+> — prefer `piper` or `kokoro` for anything private or offline. The `openai` and
+> `elevenlabs` providers are stdlib-only (no SDK, no new runtime dependency, no
+> extra); `edge` is lazily imported and shipped as an opt-in extra. If you
+> contribute another cloud engine, follow the same rules — no mandatory
+> dependency, and a privacy/cost note here and in `configuration.md`.
 
 ## Wiring it up
 
