@@ -34,6 +34,11 @@ DEFAULT_VOICE="en_US-lessac-medium"
 
 OS=$(uname -s)
 
+# Where the venv fallback (no pipx) lives, and where we expose its commands.
+LOCAL_BIN="$HOME/.local/bin"
+VENV_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/tts-daemon/venv"
+INSTALL_MODE=""   # set by install_gateway: pipx | venv | user
+
 # Option state. Tri-state prompts hold "ask" until a flag or env var pins them.
 DO_UNINSTALL=0
 DO_PURGE=0
@@ -139,6 +144,14 @@ warn_if_not_on_path() {
 
 pipx_has() { pipx list --short 2>/dev/null | grep -q "^$1 "; }
 
+# Symlink a console script from the fallback venv into ~/.local/bin.
+link_from_venv() {
+    if [ -x "$VENV_DIR/bin/$1" ]; then
+        mkdir -p "$LOCAL_BIN"
+        ln -sf "$VENV_DIR/bin/$1" "$LOCAL_BIN/$1"
+    fi
+}
+
 install_gateway() {
     if [ "$FROM_SOURCE" = "1" ]; then
         spec="git+$REPO_URL"
@@ -149,6 +162,7 @@ install_gateway() {
     fi
 
     if command -v pipx >/dev/null 2>&1; then
+        INSTALL_MODE=pipx
         if pipx_has "$PKG"; then
             if [ "$FROM_SOURCE" = "1" ]; then
                 pipx install --force "$spec"
@@ -158,23 +172,44 @@ install_gateway() {
         else
             pipx install "$spec"
         fi
+    elif python3 -m venv "$VENV_DIR" 2>/dev/null; then
+        # No pipx: an isolated venv is the robust fallback — it works on the
+        # "externally managed" Pythons (Homebrew, newer Debian/Ubuntu) where
+        # `pip install --user` is refused (PEP 668). Re-running reuses the venv.
+        INSTALL_MODE=venv
+        say "pipx not found; installing into an isolated venv at $VENV_DIR"
+        "$VENV_DIR/bin/python" -m pip install --quiet --upgrade pip || true
+        "$VENV_DIR/bin/python" -m pip install --upgrade "$spec"
+        link_from_venv tts-daemon
     else
-        say "pipx not found; using pip --user (consider 'pipx' for an isolated install)"
-        python3 -m pip install --user --upgrade "$spec"
+        # Last resort: no pipx and venv creation failed (e.g. Debian without
+        # python3-venv). Try pip --user and, if PEP 668 blocks it, guide the user.
+        INSTALL_MODE=user
+        say "pipx and venv both unavailable; falling back to pip --user"
+        if ! python3 -m pip install --user --upgrade "$spec"; then
+            die "pip --user was refused (an 'externally managed' Python). Install
+    pipx and re-run — it gives an isolated install without this problem:
+        macOS:          brew install pipx
+        Debian/Ubuntu:  sudo apt install pipx    (or python3-venv, then re-run)"
+        fi
     fi
 }
 
 install_piper() {
     say "installing the piper-tts engine (this pulls onnxruntime; it may take a minute)"
-    if command -v pipx >/dev/null 2>&1; then
-        if pipx_has piper-tts; then
-            pipx upgrade piper-tts
-        else
-            pipx install piper-tts
-        fi
-    else
-        python3 -m pip install --user --upgrade piper-tts
-    fi
+    case $INSTALL_MODE in
+        pipx)
+            if pipx_has piper-tts; then
+                pipx upgrade piper-tts
+            else
+                pipx install piper-tts
+            fi ;;
+        venv)
+            "$VENV_DIR/bin/python" -m pip install --upgrade piper-tts
+            link_from_venv piper ;;
+        *)
+            python3 -m pip install --user --upgrade piper-tts ;;
+    esac
 }
 
 default_voice_for_locale() {
@@ -194,6 +229,18 @@ default_voice_for_locale() {
 
 download_voice() {
     voice=$1
+    # The 'download' subcommand is newer than the current PyPI release, so a
+    # PyPI install may not have it yet. Detect that instead of dumping an
+    # "invalid choice: 'download'" error on the user.
+    if ! tts-daemon download --help >/dev/null 2>&1; then
+        warn "the installed tts-daemon has no 'download' command yet (the published"
+        warn "release predates the built-in voice downloader), so the default voice"
+        warn "was not fetched. To get a talking setup now, re-run with --from-source:"
+        warn "    curl -fsSL $REPO_URL/raw/main/scripts/install.sh | sh -s -- --with-piper --from-source"
+        warn "or download a voice by hand from https://huggingface.co/rhasspy/piper-voices"
+        warn "into ${XDG_DATA_HOME:-$HOME/.local/share}/tts-daemon/piper/."
+        return 0
+    fi
     say "downloading Piper voice: $voice"
     if tts-daemon download "$voice"; then
         return 0
@@ -276,6 +323,18 @@ EOF
 
 # -------------------------------------------------------------- uninstall
 
+# Remove ~/.local/bin/<name> only if it is a symlink we created into the venv,
+# never a real binary the user put there themselves.
+remove_our_symlink() {
+    target="$LOCAL_BIN/$1"
+    if [ -L "$target" ]; then
+        dest=$(readlink "$target" 2>/dev/null || true)
+        case $dest in
+            "$VENV_DIR"/*) rm -f "$target" ;;
+        esac
+    fi
+}
+
 uninstall() {
     say "uninstalling $PKG"
     if [ "$OS" = "Linux" ] && command -v systemctl >/dev/null 2>&1; then
@@ -288,12 +347,33 @@ uninstall() {
         fi
     fi
 
+    removed=0
+
+    # pipx app
     if command -v pipx >/dev/null 2>&1 && pipx_has "$PKG"; then
         pipx uninstall "$PKG" || true
-    else
-        python3 -m pip uninstall -y "$PKG" 2>/dev/null ||
-            warn "pip could not uninstall $PKG (installed another way, or already gone)."
+        removed=1
     fi
+
+    # venv fallback: our symlinks (only if they point into the venv) + the venv
+    remove_our_symlink tts-daemon
+    remove_our_symlink piper
+    if [ -d "$VENV_DIR" ]; then
+        rm -rf "$VENV_DIR"
+        say "removed the isolated venv"
+        removed=1
+    fi
+
+    # pip --user install: only when a real (non-symlink) console script sits in
+    # the user bin — so we never disturb a system-wide or editable/dev install.
+    ubin=$(user_bin_dir)
+    if [ -f "$ubin/tts-daemon" ] && [ ! -L "$ubin/tts-daemon" ]; then
+        python3 -m pip uninstall -y "$PKG" >/dev/null 2>&1 || true
+        say "removed the pip --user install"
+        removed=1
+    fi
+
+    [ "$removed" = "1" ] || warn "no managed $PKG install found (installed another way?)."
 
     data_dir="${XDG_DATA_HOME:-$HOME/.local/share}/tts-daemon"
     conf_dir="${XDG_CONFIG_HOME:-$HOME/.config}/tts-daemon"

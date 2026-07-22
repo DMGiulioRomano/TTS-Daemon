@@ -36,10 +36,12 @@ jobs:
             tts-daemon --version
             # 2. idempotent: a second run upgrades in place and still succeeds
             sh /tmp/install.sh --no-piper --no-voice
-            # 3. uninstall removes the command cleanly
+            # 3. uninstall removes the command cleanly. Re-check in a *fresh*
+            # shell: the current one has cached (hashed) the path from step 2,
+            # so `command -v` here would report a stale location.
             sh /tmp/install.sh --uninstall --yes
-            if command -v tts-daemon >/dev/null 2>&1; then
-              echo "tts-daemon still present after --uninstall" >&2
+            if sh -c "command -v tts-daemon" >/dev/null 2>&1; then
+              echo "tts-daemon still resolvable after --uninstall" >&2
               exit 1
             fi
           '

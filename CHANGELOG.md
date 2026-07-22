@@ -31,7 +31,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **One-line install script, fleshed out** (`scripts/install.sh`): the
   `curl … | sh` installer now checks for Python 3.10+, installs the gateway
-  with pipx (falling back to `pip install --user`), and then _offers_ to install
+  with pipx — or, when pipx is absent, into an isolated venv (which sidesteps
+  the "externally managed environment" refusal of `pip install --user` on
+  Homebrew/newer-Debian Python), falling back to `pip install --user` only when
+  a venv cannot be created — and then _offers_ to install
   the `piper-tts` engine and download a default voice for the user's locale
   (reusing the built-in downloader). It detects an audio playback command and,
   when none is present, prints the exact fix (mirroring `CommandPlayer`'s
