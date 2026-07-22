@@ -48,6 +48,15 @@ dev = [
 edge = [
     "edge-tts>=6.1",
 ]
+# Local neural TTS via kokoro-onnx (ONNX Runtime, CPU-friendly). Optional so the
+# gateway never requires it; the provider lazy-imports it. Needs a model and a
+# voices file downloaded separately (see docs/providers.md). The environment
+# marker keeps `pip install 'tts-daemon[kokoro]'` from failing on Python versions
+# kokoro-onnx does not support yet (it requires <3.14): there the extra is a
+# no-op and availability() reports the package as missing.
+kokoro = [
+    "kokoro-onnx>=0.4; python_version < '3.14'",
+]
 
 [project.urls]
 Homepage = "https://github.com/DMGiulioRomano/TTS-Daemon"
@@ -62,6 +71,9 @@ tts-daemon = "tts_daemon.cli:main"
 piper = "tts_daemon.providers.piper:PiperProvider"
 tone = "tts_daemon.providers.tone:ToneProvider"
 edge = "tts_daemon.providers.edge:EdgeProvider"
+kokoro = "tts_daemon.providers.kokoro:KokoroProvider"
+openai = "tts_daemon.providers.openai_tts:OpenAITTSProvider"
+elevenlabs = "tts_daemon.providers.elevenlabs:ElevenLabsProvider"
 
 [tool.setuptools.packages.find]
 where = ["src"]

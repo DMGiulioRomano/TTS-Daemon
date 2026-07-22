@@ -8,6 +8,35 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **openai + elevenlabs providers** (cloud, opt-in, **no new dependency**): two
+  premium cloud engines over stdlib `urllib` only — no SDK, no extra — so the
+  "local-first with interchangeable engines" story now includes cloud voices
+  with a per-request `provider: openai` / `provider: elevenlabs`. `openai` (voice
+  `alloy` … from a static list, models `gpt-4o-mini-tts`/`tts-1`/`tts-1-hd`,
+  `speed` forwarded only when non-default so `gpt-4o-mini-tts` keeps working);
+  `elevenlabs` (`voices()` fetched from the API and cached, empty + logged
+  without a key; `options.stability` / `options.similarity_boost` passthrough).
+  API key from `providers.<name>.api_key` or `$OPENAI_API_KEY` /
+  `$ELEVENLABS_API_KEY`; `availability()` explains the missing key. MP3 output
+  (`AudioFormat.MP3`) routed to an MP3-capable player; HTTP errors mapped to
+  `SynthesisError` with the API's truncated message; a per-provider
+  `timeout_seconds` (default 30) so a hung cloud call cannot wedge the queue.
+  Documented as paid cloud providers (privacy/cost note in `docs/providers.md`
+  and `docs/configuration.md`); neither is in the default `provider_priority`.
+- **kokoro provider** (optional extra `pip install 'tts-daemon[kokoro]'`): a
+  small, high-quality **local** neural engine (~82M params) via `kokoro-onnx`
+  (ONNX Runtime, CPU-friendly) — offline like piper, but with better prosody.
+  Registered as the `kokoro` provider via the entry-point group and
+  **lazy-imported**, so the gateway never requires the package. Settings
+  `model_path` / `voices_path` / `default_voice` / `lang` are validated lazily;
+  `availability()` distinguishes the three failure modes — package missing,
+  model file missing, voices file missing — each with the download link.
+  `speed` maps to the engine's native speed parameter, `options.lang` overrides
+  the language per request (unknown options rejected), and `voices()` lists the
+  bundled voice names from the voices file. Output is WAV (a new stdlib-only
+  `providers/_audio.floats_to_wav` helper, shared with the tone provider). No
+  new runtime dependency. Downloading the model/voices pair via `tts-daemon
+  download` is tracked as a follow-up.
 - **Community-health files**: GitHub issue forms (bug report, feature request,
   provider request), a pull-request template (with a `make check` / docs /
   CHANGELOG checklist), and a Contributor Covenant `CODE_OF_CONDUCT.md`.

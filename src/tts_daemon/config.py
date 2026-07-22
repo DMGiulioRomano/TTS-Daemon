@@ -285,4 +285,20 @@ providers:
     default_voice: en-US-AriaNeural
     # default_pitch: "+0Hz"   # optional edge pitch/volume used when a request omits them
     # default_volume: "+0%"
+  kokoro:                # optional: pip install 'tts-daemon[kokoro]' (local neural, offline)
+    # model_path: null   # ONNX model; default: ~/.local/share/tts-daemon/kokoro/kokoro-v1.0.onnx
+    # voices_path: null  # voices file; default: ~/.local/share/tts-daemon/kokoro/voices-v1.0.bin
+    default_voice: af_sarah
+    lang: en-us          # espeak g2p code (e.g. en-us, fr-fr, cmn); override via options.lang
+  openai:                # cloud, opt-in, no SDK/extra (paid, text leaves the machine)
+    # api_key: null      # or set $OPENAI_API_KEY
+    model: gpt-4o-mini-tts   # also tts-1, tts-1-hd
+    default_voice: alloy
+    # base_url: https://api.openai.com/v1
+    timeout_seconds: 30
+  elevenlabs:            # cloud, opt-in, no SDK/extra (paid, text leaves the machine)
+    # api_key: null      # or set $ELEVENLABS_API_KEY
+    model_id: eleven_multilingual_v2
+    default_voice: 21m00Tcm4TlvDq8ikWAM   # stock "Rachel" voice
+    timeout_seconds: 30
 """

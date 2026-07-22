@@ -131,6 +131,39 @@ Bypass the cache for a single request with the `no_cache` option, e.g.
 | --------------- | ------- | ------------------------------------ |
 | `default_voice` | `mid`   | `low`, `mid`, or `high` beep pitch.  |
 
+### `providers.kokoro` (optional extra)
+
+A small, high-quality **local** neural engine (~82M params) via
+[`kokoro-onnx`](https://github.com/thewh1teagle/kokoro-onnx) (ONNX Runtime,
+CPU-friendly). Fully offline — nothing leaves the machine. Install the extra and
+download the model + voices files once:
+
+```sh
+pip install 'tts-daemon[kokoro]'
+mkdir -p ~/.local/share/tts-daemon/kokoro && cd ~/.local/share/tts-daemon/kokoro
+curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx
+curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
+```
+
+| Key             | Default                                             | Meaning                                                    |
+| --------------- | --------------------------------------------------- | ---------------------------------------------------------- |
+| `model_path`    | `~/.local/share/tts-daemon/kokoro/kokoro-v1.0.onnx` | Path to the ONNX model file.                               |
+| `voices_path`   | `~/.local/share/tts-daemon/kokoro/voices-v1.0.bin`  | Path to the voices file.                                   |
+| `default_voice` | `af_sarah`                                           | Voice used when a request names none. List them with `tts-daemon voices --provider kokoro`. |
+| `lang`          | `en-us`                                             | espeak language code for the grapheme-to-phoneme step (e.g. `en-us`, `fr-fr`, `cmn`). |
+
+Per-request `options` accepts `lang` (overrides the setting for one request);
+`speed` maps to the engine's native speed parameter. Output is WAV. The
+`availability()` reason tells you which piece is missing — the package, the
+model file, or the voices file — with the download link.
+
+> **Language codes are espeak's, and must match the text's script.** `lang` is
+> passed to the engine's espeak-based grapheme-to-phoneme step, so use espeak
+> codes — `en-us`, `fr-fr`, `cmn` work; the bare `fr` / `zh` are rejected. A
+> mismatched pair (e.g. Latin text with `lang: ja`) is spelled out character by
+> character rather than spoken — that is espeak's behaviour on incoherent input,
+> not a provider bug.
+
 ### `providers.edge` (optional extra)
 
 Free Microsoft neural voices via the [`edge-tts`](https://pypi.org/project/edge-tts/)
@@ -156,6 +189,57 @@ routes to a capable command (`ffplay`/`mpv`/`afplay`).
 > that can change or break at any time, and it needs network access. Prefer
 > Piper for anything private or offline. This is why `edge` is an opt-in extra
 > and is not in the default `provider_priority`.
+
+### `providers.openai` (cloud, opt-in)
+
+OpenAI's cloud TTS over stdlib `urllib` — **no SDK, no extra, no new runtime
+dependency**. Enable it by providing an API key:
+
+```sh
+TTS_DAEMON__PROVIDERS__OPENAI__API_KEY="$OPENAI_API_KEY" tts-daemon serve
+```
+
+| Key               | Default                     | Meaning                                                    |
+| ----------------- | --------------------------- | ---------------------------------------------------------- |
+| `api_key`         | `$OPENAI_API_KEY`           | API key. Falls back to the `OPENAI_API_KEY` env variable.  |
+| `model`           | `gpt-4o-mini-tts`           | Also `tts-1`, `tts-1-hd`.                                   |
+| `default_voice`   | `alloy`                     | One of `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `nova`, `onyx`, `sage`, `shimmer`, `verse`. |
+| `base_url`        | `https://api.openai.com/v1` | Override for a proxy or Azure/OpenAI-compatible endpoint.   |
+| `timeout_seconds` | `30`                        | Per-request timeout; a hung call cannot wedge the queue.    |
+
+`speed` is forwarded as OpenAI's `speed` parameter, but only when it differs
+from `1.0` (`gpt-4o-mini-tts` rejects an explicit `speed`, so the default model
+keeps working; `tts-1`/`tts-1-hd` still get rate control). Output is MP3, routed
+to an MP3-capable player (`ffplay`/`mpv`/`afplay`). HTTP errors surface as a
+synthesis error with the API's (truncated) message.
+
+### `providers.elevenlabs` (cloud, opt-in)
+
+ElevenLabs' cloud TTS over stdlib `urllib` — **no SDK, no extra, no new runtime
+dependency**. Enable it by providing an API key:
+
+```sh
+TTS_DAEMON__PROVIDERS__ELEVENLABS__API_KEY="$ELEVENLABS_API_KEY" tts-daemon serve
+```
+
+| Key               | Default                        | Meaning                                                    |
+| ----------------- | ------------------------------ | ---------------------------------------------------------- |
+| `api_key`         | `$ELEVENLABS_API_KEY`          | API key. Falls back to the `ELEVENLABS_API_KEY` env variable. |
+| `model_id`        | `eleven_multilingual_v2`       | ElevenLabs model id.                                        |
+| `default_voice`   | `21m00Tcm4TlvDq8ikWAM`         | Voice id (the stock "Rachel"). List them with `tts-daemon voices --provider elevenlabs`. |
+| `base_url`        | `https://api.elevenlabs.io/v1` | API base.                                                  |
+| `timeout_seconds` | `30`                           | Per-request timeout; a hung call cannot wedge the queue.    |
+
+`voices()` is fetched live from the API and cached (empty, with a log line, when
+no key is set). Per-request `options` accepts `stability` and `similarity_boost`
+(floats in `[0, 1]`), forwarded in `voice_settings`. `speed` is **not** mapped —
+ElevenLabs' TTS has no equivalent rate multiplier, so it is ignored. Output is
+MP3. HTTP errors surface with the API's (truncated) message.
+
+> **Privacy / cost note.** `openai` and `elevenlabs` are **paid cloud**
+> providers: the text you synthesize leaves the machine and you are billed per
+> character. Prefer Piper or Kokoro for anything private or offline. This is why
+> neither is in the default `provider_priority`.
 
 ### Third-party providers
 
