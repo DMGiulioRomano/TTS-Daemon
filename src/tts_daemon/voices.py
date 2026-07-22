@@ -1,16 +1,19 @@
-"""Browse and download Piper voices from the ``rhasspy/piper-voices`` catalog.
+"""Download engines: Piper voices from ``rhasspy/piper-voices``, plus kokoro.
 
 Pure standard library (``urllib``) so the CLI ``download`` command works without
 the server's dependencies — the same rule the HTTP client follows. Nothing here
-imports FastAPI or the gateway internals.
+imports FastAPI or the gateway internals at import time (:class:`KokoroDownloader`
+reads a couple of constants from the kokoro provider lazily, in its constructor).
 
-The catalog is the ``voices.json`` manifest published under the Hugging Face
-repo ``rhasspy/piper-voices``; each voice lists its ``.onnx`` model and the
-``.onnx.json`` config, with a size and an md5 digest per file. Files are
-resolved under the same repo. Downloads stream to a ``*.part`` sidecar and are
-renamed into place only once the byte count and the digest both check out, so
-an interrupted or corrupted download never leaves a half-written model that
-Piper would choke on.
+:class:`VoiceCatalog` serves the ``voices.json`` manifest published under the
+Hugging Face repo ``rhasspy/piper-voices``; each voice lists its ``.onnx`` model
+and the ``.onnx.json`` config, with a size and an md5 digest per file, resolved
+under the same repo. :class:`KokoroDownloader` fetches the fixed model+voices
+pair from the pinned kokoro-onnx GitHub release (no manifest, no digest — the
+``Content-Length`` is all that can be checked). Both stream each file to a
+``*.part`` sidecar and rename it into place only once the byte count (and the
+digest, when there is one) check out, so an interrupted or corrupted download
+never leaves a half-written model that the engine would choke on.
 """
 
 from __future__ import annotations
@@ -77,6 +80,19 @@ class DownloadResult:
     @property
     def skipped(self) -> bool:
         """True when every file was already present (nothing fetched)."""
+        return not self.downloaded
+
+
+@dataclass(frozen=True)
+class KokoroDownloadResult:
+    """Outcome of a :meth:`KokoroDownloader.download` call."""
+
+    paths: list[Path] = field(default_factory=list)
+    downloaded: list[Path] = field(default_factory=list)
+
+    @property
+    def skipped(self) -> bool:
+        """True when both files were already present (nothing fetched)."""
         return not self.downloaded
 
 
@@ -275,41 +291,130 @@ class VoiceCatalog:
         expected_md5: str | None = None,
         progress: ProgressCallback | None = None,
     ) -> None:
-        part = dest.with_name(f"{dest.name}.part")
-        header_len = 0
-        written = 0
-        # Integrity check, not a security boundary: the manifest ships md5 and
-        # is fetched over the same TLS connection as the file, so this catches
-        # corruption and stale mirrors, not a hostile server.
-        digest = hashlib.md5(usedforsecurity=False)
-        try:
-            with urllib.request.urlopen(url, timeout=self.timeout) as response:
-                header_len = _as_int(response.headers.get("Content-Length"))
-                total = expected_size or header_len
-                with open(part, "wb") as handle:
-                    while True:
-                        chunk = response.read(_DOWNLOAD_CHUNK)
-                        if not chunk:
-                            break
-                        handle.write(chunk)
-                        digest.update(chunk)
-                        written += len(chunk)
-                        if progress is not None and total:
-                            progress(dest.name, min(written, total), total)
-        except (urllib.error.URLError, http.client.IncompleteRead) as exc:
-            part.unlink(missing_ok=True)
-            raise VoiceCatalogError(_offline_message(exc)) from exc
-        except OSError as exc:
-            part.unlink(missing_ok=True)
-            raise VoiceCatalogError(f"cannot write voice file {dest}: {exc}") from exc
-
-        problem = _verify_size(url, written, header_len, expected_size) or _verify_md5(
-            url, digest.hexdigest(), expected_md5
+        _stream_to_file(
+            url,
+            dest,
+            timeout=self.timeout,
+            expected_size=expected_size,
+            expected_md5=expected_md5,
+            progress=progress,
         )
-        if problem is not None:
-            part.unlink(missing_ok=True)
-            raise VoiceCatalogError(problem)
-        part.replace(dest)  # atomic on the same filesystem
+
+
+class KokoroDownloader:
+    """Downloads the kokoro model+voices pair from the pinned kokoro-onnx release.
+
+    Kokoro needs two artifacts — an ONNX model and a voices file — published at
+    fixed names under a single GitHub release. Unlike the Piper catalog there is
+    no manifest and **no per-file digest**, so integrity checking is limited to
+    the server's ``Content-Length`` (documented in ``docs/configuration.md``):
+    a file whose byte count does not match what the server promised is rejected
+    rather than installed. Each file streams to a ``*.part`` sidecar and is
+    renamed into place atomically, so the download is safe to interrupt and
+    repeat — the same guarantees the Piper downloader gives.
+    """
+
+    def __init__(self, base_url: str | None = None, *, timeout: float = _DEFAULT_TIMEOUT) -> None:
+        # The release URL and file names are owned by the provider (single source
+        # of truth); import them lazily so this module stays free of gateway
+        # internals at import time, mirroring the CLI's lazy piper import.
+        from tts_daemon.providers.kokoro import _MODEL_FILE, _RELEASE_URL, _VOICES_FILE
+
+        self.base_url = (base_url or _RELEASE_URL).rstrip("/")
+        self.model_file = _MODEL_FILE
+        self.voices_file = _VOICES_FILE
+        self.timeout = timeout
+
+    def download(
+        self,
+        model_path: str | Path,
+        voices_path: str | Path,
+        *,
+        force: bool = False,
+        progress: ProgressCallback | None = None,
+    ) -> KokoroDownloadResult:
+        """Download the model to ``model_path`` and the voices to ``voices_path``.
+
+        Parent directories are created as needed. A file already on disk is
+        skipped unless ``force`` is set, so the command is idempotent — the two
+        destinations mirror ``providers.kokoro.model_path`` / ``voices_path``.
+        """
+        specs = (
+            (f"{self.base_url}/{self.model_file}", Path(model_path).expanduser()),
+            (f"{self.base_url}/{self.voices_file}", Path(voices_path).expanduser()),
+        )
+        paths: list[Path] = []
+        downloaded: list[Path] = []
+        for url, dest in specs:
+            paths.append(dest)
+            if dest.is_file() and not force:
+                continue
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            _stream_to_file(
+                url,
+                dest,
+                timeout=self.timeout,
+                progress=progress,
+                offline_message=_kokoro_offline_message,
+            )
+            downloaded.append(dest)
+        return KokoroDownloadResult(paths=paths, downloaded=downloaded)
+
+
+def _stream_to_file(
+    url: str,
+    dest: Path,
+    *,
+    timeout: float,
+    expected_size: int = 0,
+    expected_md5: str | None = None,
+    progress: ProgressCallback | None = None,
+    offline_message: Callable[[Exception], str] | None = None,
+) -> None:
+    """Stream ``url`` into ``dest`` via a ``*.part`` sidecar, then verify + rename.
+
+    Shared by the Piper catalog and the kokoro downloader. The file is renamed
+    into place only once its byte count (and md5, when the caller supplies one)
+    check out, so an interrupted or corrupt download never leaves a
+    usable-looking file. ``offline_message`` lets each caller phrase the
+    unreachable-host error in its own terms (Piper catalog vs. kokoro release).
+    """
+    offline = offline_message or _offline_message
+    part = dest.with_name(f"{dest.name}.part")
+    header_len = 0
+    written = 0
+    # Integrity check, not a security boundary: any digest ships alongside the
+    # file over the same TLS connection, so this catches corruption and stale
+    # mirrors, not a hostile server.
+    digest = hashlib.md5(usedforsecurity=False)
+    try:
+        with urllib.request.urlopen(url, timeout=timeout) as response:
+            header_len = _as_int(response.headers.get("Content-Length"))
+            total = expected_size or header_len
+            with open(part, "wb") as handle:
+                while True:
+                    chunk = response.read(_DOWNLOAD_CHUNK)
+                    if not chunk:
+                        break
+                    handle.write(chunk)
+                    digest.update(chunk)
+                    written += len(chunk)
+                    if progress is not None and total:
+                        progress(dest.name, min(written, total), total)
+    except (urllib.error.URLError, http.client.IncompleteRead) as exc:
+        part.unlink(missing_ok=True)
+        raise VoiceCatalogError(offline(exc)) from exc
+    except OSError as exc:
+        part.unlink(missing_ok=True)
+        raise VoiceCatalogError(f"cannot write {dest}: {exc}") from exc
+
+    problem = _verify_size(url, written, header_len, expected_size) or _verify_md5(
+        url, digest.hexdigest(), expected_md5
+    )
+    if problem is not None:
+        part.unlink(missing_ok=True)
+        raise VoiceCatalogError(problem)
+    part.replace(dest)  # atomic on the same filesystem
 
 
 def _verify_size(url: str, written: int, header_len: int, expected_size: int) -> str | None:
@@ -343,6 +448,15 @@ def _offline_message(exc: Exception) -> str:
         f"cannot reach the Piper voice catalog ({reason}). Check your internet "
         "connection, or download the .onnx and .onnx.json files manually into your "
         "models_dir."
+    )
+
+
+def _kokoro_offline_message(exc: Exception) -> str:
+    reason = getattr(exc, "reason", None) or exc
+    return (
+        f"cannot download the kokoro model files ({reason}). Check your internet "
+        "connection, or download kokoro-v1.0.onnx and voices-v1.0.bin manually "
+        "into your kokoro directory."
     )
 
 
