@@ -58,13 +58,16 @@ Skip the prompts for an all-in-one, talking setup:
 curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh -s -- --with-piper --yes
 ```
 
-**Docker** (API + synthesis; playback needs host audio — see
-[docs/installation.md](docs/installation.md)):
+**Docker** — the published image bakes in Piper and a default voice:
 
 ```sh
-docker build -t tts-daemon https://github.com/DMGiulioRomano/TTS-Daemon.git
-docker run --rm -p 5111:5111 tts-daemon
+docker run --rm -p 5111:5111 ghcr.io/dmgiulioromano/tts-daemon
 ```
+
+Multi-arch (amd64 + arm64, so Raspberry Pi works). Containers have no sound
+device, so it runs in **API mode** (`POST /v1/synthesize` returns a WAV);
+host playback and building locally are covered in
+[docs/installation.md](docs/installation.md#docker).
 
 ## The 60-second tour
 

@@ -8,6 +8,27 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Official Docker image** (`Dockerfile`, multi-stage on `python:3.12-slim`):
+  the builder installs the gateway and the Piper engine into an isolated venv
+  and bakes in one default voice (`en_US-lessac-medium`) at build time; the
+  runtime stage copies just the venv and the voice for a lean image that
+  synthesizes out of the box. It binds `0.0.0.0` **inside** the container
+  (`TTS_DAEMON__SERVER__HOST`; the host port mapping is what keeps it private),
+  points Piper at the baked-in voice
+  (`TTS_DAEMON__PROVIDERS__PIPER__MODELS_DIR=/data/voices`), and runs in **API
+  mode** with playback disabled (`TTS_DAEMON__PLAYBACK__BACKEND=null`) since a
+  container has no sound device — `POST /v1/synthesize` returns a WAV. Runs as a
+  non-root user, ships a `HEALTHCHECK` against `/health`, and includes
+  `libgomp1` (onnxruntime's one system dependency) but no ffmpeg. A
+  `docker-compose.yml` example and a Docker section in `docs/installation.md`
+  (API mode, keeping it private, and optional host-audio passthrough via
+  `--device /dev/snd` or a PulseAudio/PipeWire socket) accompany it. A
+  tag-gated GitHub Actions workflow (`docker-publish.yml`, `on: push: tags:
+  ['v*']`) builds and pushes the multi-arch image
+  (`linux/amd64` + `linux/arm64`) to `ghcr.io/dmgiulioromano/tts-daemon` using
+  the built-in `GITHUB_TOKEN` — it never runs on a normal push, so no image is
+  published until a release tag is cut.
+
 - **One-line install script, fleshed out** (`scripts/install.sh`): the
   `curl … | sh` installer now checks for Python 3.10+, installs the gateway
   with pipx (falling back to `pip install --user`), and then _offers_ to install

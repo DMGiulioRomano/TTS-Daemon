@@ -77,6 +77,74 @@ curl -s localhost:5111/health
 Without a TTS engine you will hear beeps — that is the `tone` fallback
 provider confirming that the server, queue, and audio output all work.
 
+## Docker
+
+The published image bundles the gateway, the Piper engine, and one default
+voice (`en_US-lessac-medium`), so it synthesizes speech immediately:
+
+```sh
+docker run --rm -p 5111:5111 ghcr.io/dmgiulioromano/tts-daemon
+```
+
+Images are multi-arch (`linux/amd64` and `linux/arm64`, so Raspberry Pi works).
+Prefer to build from a checkout?
+
+```sh
+docker build -t tts-daemon .
+docker run --rm -p 5111:5111 tts-daemon
+```
+
+A ready-made [`docker-compose.yml`](../docker-compose.yml) is in the repo root.
+
+### API mode (the default)
+
+A container has no sound device, so the image runs in **API mode**: it
+synthesizes audio but plays nothing (`playback.backend` is set to `null`
+inside the image). Drive it over HTTP — the OpenAI-compatible and
+`/v1/synthesize` endpoints return the audio bytes:
+
+```sh
+curl -X POST localhost:5111/v1/synthesize \
+     -H 'content-type: application/json' \
+     -d '{"text":"hello from a container"}' --output hello.wav
+```
+
+`GET /health` reports readiness (the image ships a `HEALTHCHECK` that polls it).
+
+### Keeping it private
+
+The image binds `0.0.0.0` **inside** the container because that is the only
+address the published port can reach; it is the host port mapping that decides
+exposure. `-p 5111:5111` (or `127.0.0.1:5111:5111`) keeps it on your machine.
+Before mapping it to a public interface, set a bearer token so `/v1` requires
+`Authorization: Bearer <token>`:
+
+```sh
+docker run --rm -p 5111:5111 \
+  -e TTS_DAEMON__SERVER__AUTH_TOKEN="$(openssl rand -hex 32)" \
+  ghcr.io/dmgiulioromano/tts-daemon
+```
+
+### Playback from a container (optional, Linux desktop)
+
+Hearing audio *from* the container is an edge case — it needs the host's audio
+stack passed in, and it is host-specific. Turn the backend back on and share a
+device:
+
+```sh
+# ALSA:
+docker run --rm -p 5111:5111 --device /dev/snd \
+  -e TTS_DAEMON__PLAYBACK__BACKEND=auto \
+  ghcr.io/dmgiulioromano/tts-daemon
+
+# PulseAudio/PipeWire: mount the user socket and point PULSE_SERVER at it, e.g.
+#   -v "$XDG_RUNTIME_DIR/pulse/native:/run/pulse/native" \
+#   -e PULSE_SERVER=unix:/run/pulse/native
+```
+
+(The image contains no audio player by default, so container playback also
+needs one installed — the API-mode workflow above avoids all of this.)
+
 ## Install Piper
 
 ### 1. The engine
