@@ -17,7 +17,12 @@ from pathlib import Path
 from tts_daemon.client import GatewayClient, GatewayClientError
 from tts_daemon.core.errors import ConfigError
 from tts_daemon.defaults import DEFAULT_BASE_URL
-from tts_daemon.voices import VoiceCatalog, VoiceCatalogError
+from tts_daemon.voices import KokoroDownloader, VoiceCatalog, VoiceCatalogError
+
+#: Reserved ``download`` target that fetches the kokoro model+voices pair
+#: instead of a Piper voice (Piper ids look like ``en_US-lessac-medium``, so the
+#: bare word never collides with one).
+KOKORO_TARGET = "kokoro"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -92,22 +97,28 @@ def build_parser() -> argparse.ArgumentParser:
     providers.set_defaults(handler=cmd_providers)
 
     download = subparsers.add_parser(
-        "download", help="download a Piper voice into the models directory"
+        "download",
+        help="download a Piper voice, or the kokoro model pair (download kokoro)",
     )
     download.add_argument(
-        "voice", nargs="?", help="voice id to download (e.g. en_US-lessac-medium)"
+        "voice",
+        nargs="?",
+        help="voice id to download (e.g. en_US-lessac-medium), or 'kokoro' for "
+        "the kokoro model+voices pair",
     )
     download.add_argument(
         "--list",
         action="store_true",
         dest="list_voices",
-        help="list the catalog instead of downloading",
+        help="list the Piper catalog instead of downloading",
     )
     download.add_argument(
         "--language", help="with --list, filter by language (e.g. 'it' or 'it_IT')"
     )
     download.add_argument(
-        "--models-dir", help="destination directory (default: the piper models_dir from config)"
+        "--models-dir",
+        help="destination directory (default: the piper models_dir, or the kokoro "
+        "dir for 'download kokoro', from config)",
     )
     download.add_argument(
         "--force", action="store_true", help="re-download even if the files already exist"
@@ -268,6 +279,9 @@ def cmd_providers(args: argparse.Namespace) -> int:
 
 
 def cmd_download(args: argparse.Namespace) -> int:
+    if args.voice == KOKORO_TARGET:
+        # A fixed pair of files, so --list has nothing to enumerate; ignore it.
+        return _download_kokoro(args)
     catalog = VoiceCatalog()
     if args.list_voices:
         return _list_voices(catalog, args.language)
@@ -290,6 +304,25 @@ def cmd_download(args: argparse.Namespace) -> int:
     else:
         print(f"downloaded {result.voice_id} to {result.models_dir}")
     print(f'try it: tts-daemon speak "Hello" --voice {result.voice_id}')
+    return 0
+
+
+def _download_kokoro(args: argparse.Namespace) -> int:
+    model_path, voices_path = _resolve_kokoro_paths(args.models_dir)
+    result = KokoroDownloader().download(
+        model_path, voices_path, force=args.force, progress=_make_progress()
+    )
+    if sys.stderr.isatty() and result.downloaded:
+        print(file=sys.stderr)  # end the progress line
+
+    if result.skipped:
+        print("kokoro model and voices already present (use --force to refetch):")
+    else:
+        print("downloaded the kokoro model and voices:")
+    for path in result.paths:
+        state = "downloaded" if path in result.downloaded else "present"
+        print(f"  {path} ({state})")
+    print('try it: tts-daemon speak "Hello" --provider kokoro')
     return 0
 
 
@@ -321,6 +354,34 @@ def _resolve_models_dir(explicit: str | None) -> Path:
         return default_models_dir()
     configured = settings.get("models_dir")
     return Path(configured).expanduser() if configured else default_models_dir()
+
+
+def _resolve_kokoro_paths(models_dir: str | None) -> tuple[Path, Path]:
+    """Where to put the kokoro pair: --models-dir wins, else config, else defaults.
+
+    Mirrors ``KokoroProvider``'s own path resolution so a downloaded pair lands
+    exactly where the provider will look for it (respecting the
+    ``providers.kokoro.model_path`` / ``voices_path`` overrides).
+    """
+    from tts_daemon.providers.kokoro import _MODEL_FILE, _VOICES_FILE, default_kokoro_dir
+
+    if models_dir:
+        base = Path(models_dir).expanduser()
+        return base / _MODEL_FILE, base / _VOICES_FILE
+
+    try:
+        from tts_daemon.config import load_config
+
+        settings = load_config().provider_settings("kokoro")
+    except ConfigError:
+        settings = {}
+    base = default_kokoro_dir()
+    model = settings.get("model_path")
+    voices = settings.get("voices_path")
+    return (
+        Path(model).expanduser() if model else base / _MODEL_FILE,
+        Path(voices).expanduser() if voices else base / _VOICES_FILE,
+    )
 
 
 def _make_progress():
