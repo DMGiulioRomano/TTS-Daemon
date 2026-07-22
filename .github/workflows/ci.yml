@@ -17,6 +17,33 @@ jobs:
       - run: ruff check src tests
       - run: ruff format --check src tests
 
+  install-script:
+    # The `curl | sh` installer (scripts/install.sh): static analysis plus a
+    # real end-to-end run inside a throwaway container, so nothing touches the
+    # CI host — the container is the sandbox and is discarded on exit.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck the installer
+        run: shellcheck scripts/install.sh
+      - name: Smoke-run the installer in a disposable container
+        run: |
+          docker run --rm --network host -v "$PWD:/src:ro" python:3.12-slim sh -eu -c '
+            cp /src/scripts/install.sh /tmp/install.sh
+            # 1. fresh install of the gateway from PyPI (no engine, no voice)
+            sh /tmp/install.sh --no-piper --no-voice
+            export PATH="$(python3 -m site --user-base)/bin:$PATH"
+            tts-daemon --version
+            # 2. idempotent: a second run upgrades in place and still succeeds
+            sh /tmp/install.sh --no-piper --no-voice
+            # 3. uninstall removes the command cleanly
+            sh /tmp/install.sh --uninstall --yes
+            if command -v tts-daemon >/dev/null 2>&1; then
+              echo "tts-daemon still present after --uninstall" >&2
+              exit 1
+            fi
+          '
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:

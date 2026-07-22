@@ -8,6 +8,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **One-line install script, fleshed out** (`scripts/install.sh`): the
+  `curl … | sh` installer now checks for Python 3.10+, installs the gateway
+  with pipx (falling back to `pip install --user`), and then _offers_ to install
+  the `piper-tts` engine and download a default voice for the user's locale
+  (reusing the built-in downloader). It detects an audio playback command and,
+  when none is present, prints the exact fix (mirroring `CommandPlayer`'s
+  candidate list), then finishes with a "next steps" block. It is POSIX `sh`,
+  shellcheck-clean, uses **no `sudo`**, and is idempotent (re-running upgrades in
+  place). New flags: `--with-piper`/`--no-piper`, `--voice`/`--no-voice`,
+  `--systemd`/`--no-systemd` (optional systemd **user** service on Linux),
+  `--from-source`, `--yes`, and `--uninstall` (with `--purge` to also remove
+  config, cache and downloaded voices). Prompts read from `/dev/tty` so they work
+  under `curl | sh`, and every prompt has an environment-variable equivalent for
+  unattended use. A new CI job runs ShellCheck and a full install → re-install →
+  uninstall smoke test inside a disposable container (no mutation of the CI
+  host).
+
 - **Sentence-level pipelining for long texts** (`speech.chunking`, on by
   default): a long text is split into sentences and the gateway speaks the
   first one while the next synthesizes (look-ahead depth one, on a single-slot

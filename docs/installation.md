@@ -32,6 +32,37 @@ cd TTS-Daemon
 pip install .
 ```
 
+### One-line install script
+
+The `curl | sh` installer does the same pipx/`pip --user` install and then
+offers to add the Piper engine and download a voice for your locale. It never
+uses `sudo`, is safe to re-run, and can undo itself:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh
+```
+
+When piped it reads prompts from your terminal; pass flags to run it
+unattended (after `--`, since the script's own arguments come after `sh`):
+
+| Flag | Effect |
+| ---- | ------ |
+| `--with-piper` / `--no-piper` | install (or skip) the `piper-tts` engine |
+| `--voice ID` / `--no-voice` | download (or skip) a specific Piper voice |
+| `--systemd` / `--no-systemd` | set up (or skip) the systemd user service (Linux) |
+| `--from-source` | install from the git repo instead of PyPI |
+| `--yes` | accept every prompt (good for scripts/CI) |
+| `--uninstall` `[--purge]` | remove the gateway (and, with `--purge`, its data) |
+
+```sh
+# a complete, talking setup in one shot:
+curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh -s -- --with-piper --yes
+```
+
+The same flags are available as environment variables for the piped case
+(`TTS_DAEMON_INSTALL_PIPER`, `TTS_DAEMON_INSTALL_VOICE`, `TTS_DAEMON_VOICE`,
+`TTS_DAEMON_SETUP_SYSTEMD`, `TTS_DAEMON_ASSUME_YES`).
+
 The PyPI distribution is named `tts-daemon` (the `tts-daemon` name was
 already taken by an unrelated project); the command it installs is still
 `tts-daemon`. Verify:
@@ -190,7 +221,16 @@ Restrict `server.cors_origins` too when you expose the gateway.
 
 ## Uninstall
 
+If you used the install script, let it clean up (it also removes the systemd
+user service and leaves your data untouched unless you add `--purge`):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh -s -- --uninstall
+```
+
+Or by hand:
+
 ```sh
 pip uninstall tts-daemon     # or: pipx uninstall tts-daemon
-rm -rf ~/.config/tts-daemon ~/.local/share/tts-daemon
+rm -rf ~/.config/tts-daemon ~/.local/share/tts-daemon ~/.cache/tts-daemon
 ```

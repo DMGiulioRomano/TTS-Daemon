@@ -44,10 +44,18 @@ pipeline before setting up Piper.
 pip install tts-daemon        # or: pipx install tts-daemon (isolated, recommended)
 ```
 
-**One-line script** (uses pipx when present, else `pip --user`):
+**One-line script** — installs the gateway (pipx when present, else `pip --user`)
+and offers to add the Piper engine and a voice for your locale. No `sudo`,
+idempotent, and reversible with `--uninstall`:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh
+```
+
+Skip the prompts for an all-in-one, talking setup:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh -s -- --with-piper --yes
 ```
 
 **Docker** (API + synthesis; playback needs host audio — see
