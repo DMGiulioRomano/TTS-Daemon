@@ -50,6 +50,19 @@ class ServerConfig(_StrictModel):
     auth_token: str | None = None
 
 
+class ChunkingConfig(_StrictModel):
+    """Sentence-level pipelining for long texts (lower time-to-first-sound).
+
+    When enabled, a text at least ``min_chars`` long is split into sentence
+    chunks so the gateway can speak the first sentence while synthesizing the
+    next. Utterance semantics are unchanged (one id, one lifecycle); disabling
+    it restores exactly one clip per utterance.
+    """
+
+    enabled: bool = True
+    min_chars: int = Field(default=400, ge=1)
+
+
 class SpeechConfig(_StrictModel):
     """Provider selection and queue behaviour."""
 
@@ -59,6 +72,7 @@ class SpeechConfig(_StrictModel):
     queue_size: int = Field(default=64, ge=1)
     history_size: int = Field(default=50, ge=0)
     max_text_length: int = Field(default=10_000, ge=1)
+    chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
 
 
 class PlaybackConfig(_StrictModel):
@@ -254,6 +268,9 @@ speech:
   queue_size: 64         # utterances held before /v1/speak returns 429
   history_size: 50       # finished utterances kept in /v1/status
   max_text_length: 10000 # longer texts are rejected with 422
+  chunking:              # speak sentence 1 while sentence 2 synthesizes (long texts)
+    enabled: true        # false = one clip per utterance (previous behaviour)
+    min_chars: 400       # only texts at least this long are split into sentences
 
 playback:
   backend: auto          # auto | command | null (null = synthesize but stay silent)
