@@ -50,9 +50,12 @@ edge = [
 ]
 # Local neural TTS via kokoro-onnx (ONNX Runtime, CPU-friendly). Optional so the
 # gateway never requires it; the provider lazy-imports it. Needs a model and a
-# voices file downloaded separately (see docs/providers.md).
+# voices file downloaded separately (see docs/providers.md). The environment
+# marker keeps `pip install 'tts-daemon[kokoro]'` from failing on Python versions
+# kokoro-onnx does not support yet (it requires <3.14): there the extra is a
+# no-op and availability() reports the package as missing.
 kokoro = [
-    "kokoro-onnx>=0.4",
+    "kokoro-onnx>=0.4; python_version < '3.14'",
 ]
 
 [project.urls]

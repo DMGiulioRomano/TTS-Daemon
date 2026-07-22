@@ -150,12 +150,19 @@ curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-fil
 | `model_path`    | `~/.local/share/tts-daemon/kokoro/kokoro-v1.0.onnx` | Path to the ONNX model file.                               |
 | `voices_path`   | `~/.local/share/tts-daemon/kokoro/voices-v1.0.bin`  | Path to the voices file.                                   |
 | `default_voice` | `af_sarah`                                           | Voice used when a request names none. List them with `tts-daemon voices --provider kokoro`. |
-| `lang`          | `en-us`                                             | Language for the grapheme-to-phoneme step.                 |
+| `lang`          | `en-us`                                             | espeak language code for the grapheme-to-phoneme step (e.g. `en-us`, `fr-fr`, `cmn`). |
 
 Per-request `options` accepts `lang` (overrides the setting for one request);
 `speed` maps to the engine's native speed parameter. Output is WAV. The
 `availability()` reason tells you which piece is missing — the package, the
 model file, or the voices file — with the download link.
+
+> **Language codes are espeak's, and must match the text's script.** `lang` is
+> passed to the engine's espeak-based grapheme-to-phoneme step, so use espeak
+> codes — `en-us`, `fr-fr`, `cmn` work; the bare `fr` / `zh` are rejected. A
+> mismatched pair (e.g. Latin text with `lang: ja`) is spelled out character by
+> character rather than spoken — that is espeak's behaviour on incoherent input,
+> not a provider bug.
 
 ### `providers.edge` (optional extra)
 

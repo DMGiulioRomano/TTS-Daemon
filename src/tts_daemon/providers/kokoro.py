@@ -27,13 +27,15 @@ Settings (``providers.kokoro`` in the config file):
     Voice used when a request names none (default ``af_sarah``). List the
     bundled names with ``tts-daemon voices --provider kokoro``.
 ``lang``
-    Language passed to the engine's grapheme-to-phoneme step (default
+    espeak language code for the engine's grapheme-to-phoneme step (default
     ``en-us``); also overridable per request via ``options.lang``.
 
 Per-request ``options`` understood by this provider:
 
 ``lang``
-    Overrides the configured language for one request, e.g. ``"it"``.
+    Overrides the configured language for one request. Values are espeak
+    language codes — e.g. ``"en-us"``, ``"fr-fr"``, ``"cmn"`` — so the code and
+    the text's script must agree (``"fr"`` / ``"zh"`` are rejected by espeak).
 """
 
 from __future__ import annotations

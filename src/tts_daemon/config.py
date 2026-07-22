@@ -289,7 +289,7 @@ providers:
     # model_path: null   # ONNX model; default: ~/.local/share/tts-daemon/kokoro/kokoro-v1.0.onnx
     # voices_path: null  # voices file; default: ~/.local/share/tts-daemon/kokoro/voices-v1.0.bin
     default_voice: af_sarah
-    lang: en-us          # language for grapheme-to-phoneme (override per request via options.lang)
+    lang: en-us          # espeak g2p code (e.g. en-us, fr-fr, cmn); override via options.lang
   openai:                # cloud, opt-in, no SDK/extra (paid, text leaves the machine)
     # api_key: null      # or set $OPENAI_API_KEY
     model: gpt-4o-mini-tts   # also tts-1, tts-1-hd
