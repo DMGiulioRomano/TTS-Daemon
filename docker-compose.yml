@@ -1,0 +1,35 @@
+# Example: run the TTS Daemon in API mode.
+#
+#   docker compose up
+#   curl -X POST localhost:5111/v1/synthesize \
+#        -H 'content-type: application/json' \
+#        -d '{"text":"hello from a container"}' --output hello.wav
+#
+# The image binds 0.0.0.0 *inside* the container; the host port mapping below
+# (127.0.0.1) is what keeps the gateway private to this machine.
+services:
+  tts-daemon:
+    image: ghcr.io/dmgiulioromano/tts-daemon:latest
+    # Prefer building from this checkout instead of pulling? Comment out `image`
+    # above and uncomment:
+    # build: .
+    ports:
+      - "127.0.0.1:5111:5111"
+    restart: unless-stopped
+
+    # --- Optional: require a bearer token before exposing beyond localhost ---
+    # environment:
+    #   TTS_DAEMON__SERVER__AUTH_TOKEN: "change-me"   # then map "0.0.0.0:5111:5111"
+
+    # --- Optional: hear audio from the container (Linux desktop only) ---
+    # By default the image runs in API mode with no playback. To let /v1/speak
+    # actually play, pass the host audio device in and turn the backend back on:
+    # environment:
+    #   TTS_DAEMON__PLAYBACK__BACKEND: "auto"
+    # devices:
+    #   - "/dev/snd:/dev/snd"        # ALSA
+    # For PulseAudio/PipeWire instead, mount the user socket, e.g.:
+    # volumes:
+    #   - "${XDG_RUNTIME_DIR}/pulse/native:/run/pulse/native"
+    # environment:
+    #   PULSE_SERVER: "unix:/run/pulse/native"

@@ -32,6 +32,37 @@ cd TTS-Daemon
 pip install .
 ```
 
+### One-line install script
+
+The `curl | sh` installer does the same pipx/`pip --user` install and then
+offers to add the Piper engine and download a voice for your locale. It never
+uses `sudo`, is safe to re-run, and can undo itself:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh
+```
+
+When piped it reads prompts from your terminal; pass flags to run it
+unattended (after `--`, since the script's own arguments come after `sh`):
+
+| Flag | Effect |
+| ---- | ------ |
+| `--with-piper` / `--no-piper` | install (or skip) the `piper-tts` engine |
+| `--voice ID` / `--no-voice` | download (or skip) a specific Piper voice |
+| `--systemd` / `--no-systemd` | set up (or skip) the systemd user service (Linux) |
+| `--from-source` | install from the git repo instead of PyPI |
+| `--yes` | accept every prompt (good for scripts/CI) |
+| `--uninstall` `[--purge]` | remove the gateway (and, with `--purge`, its data) |
+
+```sh
+# a complete, talking setup in one shot:
+curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh -s -- --with-piper --yes
+```
+
+The same flags are available as environment variables for the piped case
+(`TTS_DAEMON_INSTALL_PIPER`, `TTS_DAEMON_INSTALL_VOICE`, `TTS_DAEMON_VOICE`,
+`TTS_DAEMON_SETUP_SYSTEMD`, `TTS_DAEMON_ASSUME_YES`).
+
 The PyPI distribution is named `tts-daemon` (the `tts-daemon` name was
 already taken by an unrelated project); the command it installs is still
 `tts-daemon`. Verify:
@@ -45,6 +76,74 @@ curl -s localhost:5111/health
 
 Without a TTS engine you will hear beeps — that is the `tone` fallback
 provider confirming that the server, queue, and audio output all work.
+
+## Docker
+
+The published image bundles the gateway, the Piper engine, and one default
+voice (`en_US-lessac-medium`), so it synthesizes speech immediately:
+
+```sh
+docker run --rm -p 5111:5111 ghcr.io/dmgiulioromano/tts-daemon
+```
+
+Images are multi-arch (`linux/amd64` and `linux/arm64`, so Raspberry Pi works).
+Prefer to build from a checkout?
+
+```sh
+docker build -t tts-daemon .
+docker run --rm -p 5111:5111 tts-daemon
+```
+
+A ready-made [`docker-compose.yml`](../docker-compose.yml) is in the repo root.
+
+### API mode (the default)
+
+A container has no sound device, so the image runs in **API mode**: it
+synthesizes audio but plays nothing (`playback.backend` is set to `null`
+inside the image). Drive it over HTTP — the OpenAI-compatible and
+`/v1/synthesize` endpoints return the audio bytes:
+
+```sh
+curl -X POST localhost:5111/v1/synthesize \
+     -H 'content-type: application/json' \
+     -d '{"text":"hello from a container"}' --output hello.wav
+```
+
+`GET /health` reports readiness (the image ships a `HEALTHCHECK` that polls it).
+
+### Keeping it private
+
+The image binds `0.0.0.0` **inside** the container because that is the only
+address the published port can reach; it is the host port mapping that decides
+exposure. `-p 5111:5111` (or `127.0.0.1:5111:5111`) keeps it on your machine.
+Before mapping it to a public interface, set a bearer token so `/v1` requires
+`Authorization: Bearer <token>`:
+
+```sh
+docker run --rm -p 5111:5111 \
+  -e TTS_DAEMON__SERVER__AUTH_TOKEN="$(openssl rand -hex 32)" \
+  ghcr.io/dmgiulioromano/tts-daemon
+```
+
+### Playback from a container (optional, Linux desktop)
+
+Hearing audio *from* the container is an edge case — it needs the host's audio
+stack passed in, and it is host-specific. Turn the backend back on and share a
+device:
+
+```sh
+# ALSA:
+docker run --rm -p 5111:5111 --device /dev/snd \
+  -e TTS_DAEMON__PLAYBACK__BACKEND=auto \
+  ghcr.io/dmgiulioromano/tts-daemon
+
+# PulseAudio/PipeWire: mount the user socket and point PULSE_SERVER at it, e.g.
+#   -v "$XDG_RUNTIME_DIR/pulse/native:/run/pulse/native" \
+#   -e PULSE_SERVER=unix:/run/pulse/native
+```
+
+(The image contains no audio player by default, so container playback also
+needs one installed — the API-mode workflow above avoids all of this.)
 
 ## Install Piper
 
@@ -190,7 +289,16 @@ Restrict `server.cors_origins` too when you expose the gateway.
 
 ## Uninstall
 
+If you used the install script, let it clean up (it also removes the systemd
+user service and leaves your data untouched unless you add `--purge`):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh -s -- --uninstall
+```
+
+Or by hand:
+
 ```sh
 pip uninstall tts-daemon     # or: pipx uninstall tts-daemon
-rm -rf ~/.config/tts-daemon ~/.local/share/tts-daemon
+rm -rf ~/.config/tts-daemon ~/.local/share/tts-daemon ~/.cache/tts-daemon
 ```

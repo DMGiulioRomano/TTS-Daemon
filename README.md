@@ -44,19 +44,30 @@ pipeline before setting up Piper.
 pip install tts-daemon        # or: pipx install tts-daemon (isolated, recommended)
 ```
 
-**One-line script** (uses pipx when present, else `pip --user`):
+**One-line script** — installs the gateway (pipx when present, else `pip --user`)
+and offers to add the Piper engine and a voice for your locale. No `sudo`,
+idempotent, and reversible with `--uninstall`:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh
 ```
 
-**Docker** (API + synthesis; playback needs host audio — see
-[docs/installation.md](docs/installation.md)):
+Skip the prompts for an all-in-one, talking setup:
 
 ```sh
-docker build -t tts-daemon https://github.com/DMGiulioRomano/TTS-Daemon.git
-docker run --rm -p 5111:5111 tts-daemon
+curl -fsSL https://raw.githubusercontent.com/DMGiulioRomano/TTS-Daemon/main/scripts/install.sh | sh -s -- --with-piper --yes
 ```
+
+**Docker** — the published image bakes in Piper and a default voice:
+
+```sh
+docker run --rm -p 5111:5111 ghcr.io/dmgiulioromano/tts-daemon
+```
+
+Multi-arch (amd64 + arm64, so Raspberry Pi works). Containers have no sound
+device, so it runs in **API mode** (`POST /v1/synthesize` returns a WAV);
+host playback and building locally are covered in
+[docs/installation.md](docs/installation.md#docker).
 
 ## The 60-second tour
 
