@@ -78,6 +78,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   response format supported (others → 422). Runnable `examples/openai_compat.py`
   using the official `openai` client.
 
+### Fixed
+
+- **WebSocket endpoints now work outside the test suite**: `websockets` is a
+  runtime dependency. Plain `uvicorn` ships no WebSocket implementation, so
+  `tts-daemon serve` logged "No supported WebSocket library detected" and
+  rejected every `/v1/ws` handshake — breaking the playground's live event
+  panel. Invisible to the tests because `TestClient` speaks WebSocket
+  in-process; a test now asserts the dependency is installed.
+- **Test suite is hermetic on a developer machine**, not only on CI. The edge
+  provider leaked in through its entry point (its `voices()` really called
+  Microsoft) whenever the `[edge]` extra was installed, and piper's default
+  `models_dir` picked up voices downloaded into the real
+  `~/.local/share/tts-daemon/piper`. Both are now pinned off in the shared
+  fixtures, and the "missing edge-tts package" tests stub the import instead of
+  assuming the package is absent.
+
 ## [0.1.0] - 2026-07-21
 
 First public release.
