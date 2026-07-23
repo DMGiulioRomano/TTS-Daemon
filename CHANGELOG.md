@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-23
+
 ### Added
 
 - **Official Docker image** (`Dockerfile`, multi-stage on `python:3.12-slim`):
@@ -277,5 +279,6 @@ First public release.
   built-in defaults for ChatGPT/Claude/Gemini and is configurable per site
   from the userscript menu for any other chat.
 
-[Unreleased]: https://github.com/DMGiulioRomano/TTS-Daemon/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/DMGiulioRomano/TTS-Daemon/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/DMGiulioRomano/TTS-Daemon/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/DMGiulioRomano/TTS-Daemon/releases/tag/v0.1.0

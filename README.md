@@ -256,6 +256,7 @@ with no gateway changes. Walkthrough: [docs/providers.md](docs/providers.md).
 | [docs/architecture.md](docs/architecture.md) | Design, layers, threading model |
 | [docs/providers.md](docs/providers.md) | Writing a new TTS provider |
 | [docs/development.md](docs/development.md) | Dev setup, tests, linting, release |
+| [docs/releasing.md](docs/releasing.md) | Cutting a release (PyPI + Docker on a tag) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
 | [CHANGELOG.md](CHANGELOG.md) | Release history |
 

@@ -13,7 +13,7 @@ The package is organized in layers:
 - :mod:`tts_daemon.cli` -- the ``tts-daemon`` command line interface.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from tts_daemon.core.interfaces import AudioPlayer, TTSProvider
 from tts_daemon.core.models import (
